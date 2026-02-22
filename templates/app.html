@@ -725,13 +725,20 @@ function formatBubble(text) {
   for (const line of lines) {
     const t = line.trim();
     if (!t) { html += '<br>'; continue; }
-    // Word card:  Hindi | Roman | English | Tamil: xxx
-    if (/^[\u0900-\u097F].*\|.*\|/.test(t)) {
-      const p = t.split('|').map(x=>x.trim());
-      const hindi = p[0] || '';
-      const roman = p[1] || '';
-      const eng   = p[2] || '';
-      const ta    = (p[3]||'').replace(/Tamil:\s*/i,'').trim();
+    // Word card: Hindi | Roman | English | Tamil
+    // Match if line has 2+ pipes AND contains Devanagari anywhere
+    const hasDevanagari = /[\u0900-\u097F]/.test(t);
+    const hasPipes = (t.match(/\|/g)||[]).length >= 2;
+    if (hasDevanagari && hasPipes) {
+      // Strip leading numbers/bullets like "1." or "- " before parsing
+      const clean = t.replace(/^[\s\d\-\.\*]+/, '').trim();
+      const p = clean.split('|').map(x=>x.trim());
+      // Find which part has Devanagari — that's Hindi
+      let hindi = p.find(x => /[\u0900-\u097F]/.test(x)) || p[0] || '';
+      const idx = p.indexOf(hindi);
+      const roman = p[idx+1] || p[1] || '';
+      const eng   = p[idx+2] || p[2] || '';
+      const ta    = (p[idx+3] || p[3] ||'').replace(/Tamil:\s*/i,'').trim();
       const safe  = hindi.replace(/`/g,'');
       html += `<div class="word-card">
         <div class="wc-header">

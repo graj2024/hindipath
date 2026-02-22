@@ -230,11 +230,19 @@ RULES:
 7. Keep it warm and conversational.
 8. End with ONE follow-up suggestion.
 
-FORMAT: For every Hindi word use this EXACT format on its own line (NO brackets):
-नमस्ते | Namaste | Hello | வணக்கம்
+CRITICAL FORMAT RULES — MUST FOLLOW EXACTLY:
+- Every Hindi word MUST be on its own line in this EXACT pipe format:
+  नमस्ते | Namaste | Hello | வணக்கம்
+- The 4 parts are: Devanagari | Roman | English | Tamil
+- NO numbered lists (1. 2. 3.). NO bullet points. NO bold. NO headers.
+- Pronunciation tips go in (parentheses on their own line) after the word line.
+- Max 3-5 words per response.
+- NEVER skip the pipe format for any Hindi word.
 
-Put pronunciation tips in (parentheses on their own line).
-Max 3-5 items per turn.
+EXAMPLE of correct output:
+मदद करो | Madad karo | Help me | உதவி செய்யுங்கள்
+(க sounds like 'k', 'madad' is similar to Tamil 'உதவி' in feel)
+मदद चाहिए | Madad chahiye | I need help | எனக்கு உதவி வேண்டும்
 """
 
 @app.route("/api/chat", methods=["POST"])
@@ -333,29 +341,33 @@ def api_complete_lesson():
 @app.route("/api/tts", methods=["POST"])
 @login_required
 def api_tts():
-    import urllib.parse
-    text = ((request.json or {}).get("text") or "").strip()[:200]
+    text = ((request.json or {}).get("text") or "").strip()[:500]
     if not text: return jsonify(error="No text"), 400
-    url = f"https://translate.googleapis.com/translate_tts?ie=UTF-8&q={urllib.parse.quote(text)}&tl=hi&client=gtx&ttsspeed=0.8"
-    try:
-        r = requests.get(url, timeout=10, headers={"User-Agent":"Mozilla/5.0"})
-        if r.ok and len(r.content) > 100:
-            return Response(r.content, mimetype="audio/mpeg", headers={"Content-Length":str(len(r.content))})
-    except Exception as e:
-        print(f"[TTS] Google error: {e}")
     if SARVAM_KEY:
         try:
-            res = requests.post("https://api.sarvam.ai/text-to-speech",
+            res = requests.post(
+                "https://api.sarvam.ai/text-to-speech",
                 headers={"Content-Type":"application/json","api-subscription-key":SARVAM_KEY},
-                json={"text":text,"target_language_code":"hi-IN","speaker":"Abhilash","model":"bulbul:v2","pace":0.85},
-                timeout=15)
+                json={
+                    "text": text,
+                    "target_language_code": "hi-IN",
+                    "speaker": "shubh",
+                    "model": "bulbul:v3",
+                    "pace": 0.9,
+                    "enable_preprocessing": True
+                },
+                timeout=20
+            )
+            print(f"[TTS] status={res.status_code} size={len(res.content)}")
             if res.ok:
-                audios = res.json().get("audios",[])
+                audios = res.json().get("audios", [])
                 if audios:
                     ab = _b64.b64decode(audios[0])
-                    return Response(ab, mimetype="audio/wav", headers={"Content-Length":str(len(ab))})
+                    return Response(ab, mimetype="audio/wav",
+                                    headers={"Content-Length": str(len(ab))})
+            print(f"[TTS] Sarvam error body: {res.text[:300]}")
         except Exception as e:
-            print(f"[TTS] Sarvam error: {e}")
+            print(f"[TTS] Sarvam exception: {e}")
     return jsonify(error="TTS unavailable"), 502
 
 if __name__ == "__main__":
