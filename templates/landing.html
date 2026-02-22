@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HindiPath – Learn Hindi the Tamil Way</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;700&family=Lora:wght@700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D1117;--surface:#161B22;--card:#1C2333;--border:#30363D;
+  --saffron:#FF9933;--saffron2:#FFB347;--green:#3FB950;--blue:#58A6FF;
+  --purple:#BC8CFF;--text:#E6EDF3;--muted:#8B949E;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;
+  background:rgba(13,17,23,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,153,51,.1);
+}
+.nav-logo{
+  font-family:'Lora',serif;font-size:18px;font-weight:900;
+  background:linear-gradient(90deg,var(--saffron),var(--saffron2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  display:flex;align-items:center;gap:8px;
+}
+.nav-logo .hi{font-family:'Noto Sans Devanagari',sans-serif;-webkit-text-fill-color:var(--saffron);font-size:20px}
+.nav-btns{display:flex;gap:10px;align-items:center}
+.btn-outline{
+  padding:8px 18px;border-radius:10px;border:1px solid var(--border);
+  background:none;color:var(--text);font-family:'Outfit',sans-serif;
+  font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;
+  transition:all .2s;
+}
+.btn-outline:hover{border-color:var(--saffron);color:var(--saffron)}
+.btn-solid{
+  padding:8px 20px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,var(--saffron),#FF6600);
+  color:#000;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;text-decoration:none;transition:transform .15s,opacity .2s;
+}
+.btn-solid:hover{opacity:.9;transform:translateY(-1px)}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:100px 24px 60px;
+  background:
+    radial-gradient(ellipse at 20% 20%,rgba(255,153,51,.12) 0%,transparent 55%),
+    radial-gradient(ellipse at 80% 80%,rgba(63,185,80,.07) 0%,transparent 55%);
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(255,153,51,.1);border:1px solid rgba(255,153,51,.25);
+  border-radius:20px;padding:6px 14px;font-size:12px;color:var(--saffron);
+  font-weight:600;letter-spacing:.5px;margin-bottom:28px;
+}
+.hero h1{
+  font-family:'Lora',serif;font-size:clamp(36px,8vw,68px);font-weight:900;
+  line-height:1.1;margin-bottom:16px;
+}
+.hero h1 .hi{
+  font-family:'Noto Sans Devanagari',sans-serif;
+  background:linear-gradient(135deg,var(--saffron),var(--saffron2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  display:block;
+}
+.hero h1 .sub{
+  background:linear-gradient(135deg,var(--text),var(--muted));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  font-size:.6em;
+}
+.hero-desc{
+  font-size:clamp(15px,2.5vw,18px);color:var(--muted);max-width:560px;
+  line-height:1.7;margin-bottom:36px;
+}
+.hero-desc .ta{font-family:'Noto Sans Tamil',sans-serif;color:#FFB3D1}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:52px}
+.btn-hero{
+  padding:14px 32px;border-radius:14px;font-size:15px;font-weight:700;
+  font-family:'Outfit',sans-serif;cursor:pointer;text-decoration:none;
+  transition:all .2s;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-hero.primary{
+  background:linear-gradient(135deg,var(--saffron),#FF6600);color:#000;border:none;
+  box-shadow:0 4px 24px rgba(255,153,51,.35);
+}
+.btn-hero.primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(255,153,51,.45)}
+.btn-hero.secondary{background:var(--card);border:1px solid var(--border);color:var(--text)}
+.btn-hero.secondary:hover{border-color:var(--saffron);color:var(--saffron)}
+
+/* language pills */
+.lang-pills{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.lang-pill{
+  padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;
+  border:1px solid var(--border);background:var(--card);
+}
+.lang-pill.hi{font-family:'Noto Sans Devanagari',sans-serif;color:var(--saffron);border-color:rgba(255,153,51,.3)}
+.lang-pill.ta{font-family:'Noto Sans Tamil',sans-serif;color:#FFB3D1;border-color:rgba(255,179,209,.3)}
+.lang-pill.en{color:var(--blue);border-color:rgba(88,166,255,.3)}
+
+/* ── FEATURES ── */
+.section{padding:80px 24px;max-width:1100px;margin:0 auto}
+.section-label{
+  text-align:center;font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--saffron);font-weight:600;margin-bottom:14px;
+}
+.section-title{
+  text-align:center;font-family:'Lora',serif;font-size:clamp(26px,4vw,38px);
+  font-weight:700;margin-bottom:10px;
+}
+.section-sub{text-align:center;color:var(--muted);font-size:15px;margin-bottom:52px;max-width:520px;margin-left:auto;margin-right:auto}
+
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.feature-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:18px;padding:26px 22px;
+  transition:transform .2s,border-color .2s;
+  position:relative;overflow:hidden;
+}
+.feature-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,153,51,.04),transparent);
+  opacity:0;transition:opacity .2s;
+}
+.feature-card:hover{transform:translateY(-3px);border-color:rgba(255,153,51,.3)}
+.feature-card:hover::before{opacity:1}
+.feature-icon{
+  width:48px;height:48px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(255,153,51,.15),rgba(255,100,0,.08));
+  border:1px solid rgba(255,153,51,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;margin-bottom:16px;
+}
+.feature-card h3{font-size:16px;font-weight:700;margin-bottom:8px}
+.feature-card p{font-size:13px;color:var(--muted);line-height:1.6}
+.feature-card .tag{
+  display:inline-block;margin-top:12px;
+  background:rgba(255,153,51,.08);border:1px solid rgba(255,153,51,.2);
+  border-radius:8px;padding:3px 9px;font-size:11px;color:var(--saffron);font-weight:600;
+}
+
+/* ── PATH PREVIEW ── */
+.path-section{
+  background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+}
+.path-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0}
+.path-step{
+  padding:36px 28px;border-right:1px solid var(--border);
+  position:relative;
+}
+.path-step:last-child{border-right:none}
+.step-num{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;margin-bottom:14px;
+}
+.step-num.s1{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+.step-num.s2{background:rgba(255,153,51,.15);color:var(--saffron);border:1px solid rgba(255,153,51,.3)}
+.step-num.s3{background:rgba(188,140,255,.15);color:var(--purple);border:1px solid rgba(188,140,255,.3)}
+.path-step h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.path-step p{font-size:13px;color:var(--muted);line-height:1.6}
+.path-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
+.path-tag{
+  font-size:11px;padding:3px 8px;border-radius:6px;
+  background:var(--card);border:1px solid var(--border);color:var(--muted);
+}
+
+/* ── COMPARISON ── */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px;margin:0 auto}
+.compare-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px 22px}
+.compare-card.hp{border-color:rgba(255,153,51,.3);background:linear-gradient(160deg,rgba(255,153,51,.06),var(--card))}
+.compare-card h3{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.compare-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:11px;font-size:13px}
+.compare-row .ci{flex-shrink:0;font-size:14px}
+.compare-row .ct{color:var(--muted)}
+.compare-card.hp .compare-row .ct{color:var(--text)}
+
+/* ── CTA BOTTOM ── */
+.cta-section{
+  text-align:center;padding:90px 24px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,153,51,.1) 0%,transparent 60%);
+}
+.cta-section h2{font-family:'Lora',serif;font-size:clamp(28px,5vw,44px);font-weight:900;margin-bottom:14px}
+.cta-section p{color:var(--muted);font-size:15px;margin-bottom:36px}
+.cta-word{
+  font-family:'Noto Sans Devanagari',sans-serif;
+  font-size:clamp(48px,10vw,88px);font-weight:700;
+  background:linear-gradient(135deg,var(--saffron),var(--saffron2),#FF6600);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  display:block;line-height:1;margin-bottom:8px;
+}
+.cta-roman{color:var(--muted);font-size:16px;margin-bottom:36px}
+
+/* ── FOOTER ── */
+footer{
+  border-top:1px solid var(--border);
+  padding:28px 24px;text-align:center;
+  font-size:12px;color:var(--muted);
+}
+footer a{color:var(--muted);text-decoration:none}
+footer .hi{font-family:'Noto Sans Devanagari',sans-serif;color:var(--saffron)}
+
+@media(max-width:600px){
+  .compare-grid{grid-template-columns:1fr}
+  .path-steps{grid-template-columns:1fr}
+  .path-step{border-right:none;border-bottom:1px solid var(--border)}
+  .path-step:last-child{border-bottom:none}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo"><span class="hi">हिं</span>HindiPath</div>
+  <div class="nav-btns">
+    <a href="/login"    class="btn-outline">Sign In</a>
+    <a href="/register" class="btn-solid">Start Free →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🇮🇳 Built for Tamil Speakers • Free to Use</div>
+  <h1>
+    <span class="hi">हिंदी सीखें</span>
+    <span class="sub">Learn Hindi the Tamil Way</span>
+  </h1>
+  <p class="hero-desc">
+    Your personal AI Hindi tutor that speaks <span class="ta">தமிழ்</span>.<br>
+    Structured lessons, real pronunciation audio, Tamil memory tips — from zero to conversational.
+  </p>
+  <div class="hero-cta">
+    <a href="/register" class="btn-hero primary">🚀 Start Learning Free</a>
+    <a href="#features" class="btn-hero secondary">See How It Works</a>
+  </div>
+  <div class="lang-pills">
+    <div class="lang-pill hi">नमस्ते</div>
+    <div class="lang-pill en">Hello</div>
+    <div class="lang-pill ta">வணக்கம்</div>
+    <div class="lang-pill hi">धन्यवाद</div>
+    <div class="lang-pill ta">நன்றி</div>
+    <div class="lang-pill en">Thank you</div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-label">Why HindiPath</div>
+  <h2 class="section-title">Not just another chatbot</h2>
+  <p class="section-sub">Built specifically for Tamil speakers — with the bridges your brain needs to make Hindi stick.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🗣️</div>
+      <h3>Real Pronunciation Audio</h3>
+      <p>Hear every Hindi word spoken aloud. Not a robot voice — clear, natural Hindi audio for every word you learn.</p>
+      <span class="tag">🔊 Audio on every card</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧠</div>
+      <h3>Tamil Sound Connections</h3>
+      <p>"क sounds like க in Tamil" — Gurujee maps every Hindi sound to what you already know. Your Tamil brain is a superpower here.</p>
+      <span class="tag">தமிழ் memory tips</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🗺️</div>
+      <h3>Structured Learning Path</h3>
+      <p>Beginner → Intermediate → Advanced. Unlock lessons in order. Know exactly where you are and what comes next.</p>
+      <span class="tag">📈 Track your progress</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏆</div>
+      <h3>Achievements & Badges</h3>
+      <p>Earn badges as you hit milestones — First Word, 10 Words, First Lesson Complete. Small wins keep you coming back.</p>
+      <span class="tag">🎖️ 11 badges to unlock</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧑‍🏫</div>
+      <h3>AI Tutor — Gurujee</h3>
+      <p>Ask anything in Tamil or English. Gurujee always responds with Hindi + Roman + English + Tamil — all four together.</p>
+      <span class="tag">Powered by Sarvam AI</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📱</div>
+      <h3>Mobile First</h3>
+      <p>Designed for your phone. Learn on the bus, during lunch, anywhere. No app download needed — works in your browser.</p>
+      <span class="tag">Works on any device</span>
+    </div>
+  </div>
+</section>
+
+<!-- PATH PREVIEW -->
+<div class="path-section">
+  <div class="section" style="padding:60px 24px">
+    <div class="section-label">Learning Path</div>
+    <h2 class="section-title">From Zero to Conversational</h2>
+    <p class="section-sub">Three clear levels. Each unlocks when you're ready.</p>
+  </div>
+  <div class="path-steps">
+    <div class="path-step">
+      <div class="step-num s1">1</div>
+      <h3>🌱 Beginner</h3>
+      <p>Learn the essentials — greetings, numbers, colors, family words, daily phrases. Build confidence with Tamil sound bridges.</p>
+      <div class="path-tags">
+        <span class="path-tag">👋 Greetings</span>
+        <span class="path-tag">🔢 Numbers</span>
+        <span class="path-tag">🎨 Colors</span>
+        <span class="path-tag">👨‍👩‍👧 Family</span>
+        <span class="path-tag">🍛 Food</span>
+      </div>
+    </div>
+    <div class="path-step">
+      <div class="step-num s2">2</div>
+      <h3>🔥 Intermediate</h3>
+      <p>Build sentences, learn grammar patterns, talk about time, directions, shopping. Start having real conversations.</p>
+      <div class="path-tags">
+        <span class="path-tag">🕐 Time & Days</span>
+        <span class="path-tag">🗺️ Directions</span>
+        <span class="path-tag">🛒 Shopping</span>
+        <span class="path-tag">💬 Sentences</span>
+      </div>
+    </div>
+    <div class="path-step">
+      <div class="step-num s3">3</div>
+      <h3>🚀 Advanced</h3>
+      <p>Master idioms, complex grammar, formal and informal registers. Speak like a native — or at least get very close.</p>
+      <div class="path-tags">
+        <span class="path-tag">📖 Idioms</span>
+        <span class="path-tag">🏛️ Formal Hindi</span>
+        <span class="path-tag">🎭 Culture</span>
+        <span class="path-tag">📝 Grammar</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPARISON -->
+<section class="section">
+  <div class="section-label">Why Not Just Use ChatGPT?</div>
+  <h2 class="section-title">Focused beats general</h2>
+  <p class="section-sub">General AI is great for many things. Learning Hindi as a Tamil speaker needs something specific.</p>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h3>🤖 General AI (ChatGPT etc.)</h3>
+      <div class="compare-row"><span class="ci">❌</span><span class="ct">No structured path — you decide what to ask</span></div>
+      <div class="compare-row"><span class="ci">❌</span><span class="ct">No pronunciation audio</span></div>
+      <div class="compare-row"><span class="ci">❌</span><span class="ct">No Tamil-specific memory tips</span></div>
+      <div class="compare-row"><span class="ci">❌</span><span class="ct">No progress tracking or achievements</span></div>
+      <div class="compare-row"><span class="ci">❌</span><span class="ct">Inconsistent format — sometimes forgets Tamil</span></div>
+    </div>
+    <div class="compare-card hp">
+      <h3>🧑‍🏫 HindiPath</h3>
+      <div class="compare-row"><span class="ci">✅</span><span class="ct">Guided path from Beginner to Advanced</span></div>
+      <div class="compare-row"><span class="ci">✅</span><span class="ct">Audio on every single word</span></div>
+      <div class="compare-row"><span class="ci">✅</span><span class="ct">Tamil sound bridges built into every lesson</span></div>
+      <div class="compare-row"><span class="ci">✅</span><span class="ct">Track words learned, lessons done, badges earned</span></div>
+      <div class="compare-row"><span class="ci">✅</span><span class="ct">Always: Hindi + Roman + English + Tamil</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <span class="cta-word">शुरू करें</span>
+  <div class="cta-roman">Shuru Karen — Let's Begin</div>
+  <h2>Ready to learn Hindi?</h2>
+  <p>Free to use. No credit card. Start speaking in minutes.</p>
+  <a href="/register" class="btn-hero primary" style="display:inline-flex">🚀 Create Free Account</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p><span class="hi">हिंदी</span>Path — Learn Hindi the Tamil Way &nbsp;•&nbsp;
+  <a href="/login">Sign In</a> &nbsp;•&nbsp; <a href="/register">Register</a></p>
+  <p style="margin-top:8px">Powered by Sarvam AI &nbsp;•&nbsp; Built with ❤️ for Tamil speakers</p>
+</footer>
+
+</body>
+</html>

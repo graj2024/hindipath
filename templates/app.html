@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>HindiPath – Learn Hindi</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Lora:ital,wght@0,500;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D1117;--surface:#161B22;--card:#1C2333;--border:#30363D;
+  --saffron:#FF9933;--saffron2:#FFB347;--green:#3FB950;--red:#F85149;
+  --blue:#58A6FF;--purple:#BC8CFF;--text:#E6EDF3;--muted:#8B949E;
+  --tutor-bg:#1A2332;--user-bg:#1E2D1E;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+
+/* ── TOP BAR ── */
+.topbar{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  position:relative;z-index:50;
+}
+.logo-small{
+  font-family:'Lora',serif;font-size:16px;font-weight:700;
+  background:linear-gradient(90deg,var(--saffron),var(--saffron2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  flex:1;
+}
+.logo-small span{
+  font-family:'Noto Sans Devanagari',sans-serif;
+  -webkit-text-fill-color:var(--saffron);margin-right:6px;
+}
+.user-chip{
+  display:flex;align-items:center;gap:7px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:5px 12px 5px 7px;
+  font-size:12px;color:var(--muted);cursor:pointer;
+}
+.user-chip .av{
+  width:22px;height:22px;border-radius:50%;
+  background:linear-gradient(135deg,var(--saffron),#FF6600);
+  display:flex;align-items:center;justify-content:center;font-size:12px;
+}
+.icon-btn{
+  width:34px;height:34px;border-radius:9px;
+  background:var(--card);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:15px;color:var(--muted);transition:all .2s;
+}
+.icon-btn:active{transform:scale(.93);background:var(--border)}
+
+/* ── TAB BAR ── */
+.tab-bar{
+  display:flex;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.tab-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  gap:2px;padding:10px 6px;
+  background:none;border:none;cursor:pointer;
+  color:var(--muted);font-size:10px;font-family:'Outfit',sans-serif;
+  border-bottom:2px solid transparent;transition:all .2s;
+}
+.tab-btn .ico{font-size:20px}
+.tab-btn.active{color:var(--saffron);border-bottom-color:var(--saffron)}
+
+/* ── SCREENS ── */
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
+.screen.active{display:flex}
+
+/* ════════════════════════════
+   TUTOR SCREEN
+════════════════════════════ */
+.tutor-header{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.tutor-av{
+  width:38px;height:38px;border-radius:50%;
+  background:linear-gradient(135deg,#FF9933,#FF6600);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  flex-shrink:0;box-shadow:0 0 0 3px rgba(255,153,51,.2);
+  position:relative;
+}
+.tutor-av .dot{
+  position:absolute;bottom:1px;right:1px;width:10px;height:10px;
+  border-radius:50%;background:var(--green);border:2px solid var(--surface);
+}
+.tutor-info{flex:1;min-width:0}
+.tutor-name{
+  font-family:'Lora',serif;font-size:15px;font-weight:700;
+  background:linear-gradient(90deg,var(--saffron),var(--saffron2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.tutor-status{font-size:11px;color:var(--green);margin-top:1px}
+
+.topics-bar{
+  display:flex;gap:8px;padding:8px 14px;
+  overflow-x:auto;flex-shrink:0;
+  border-bottom:1px solid var(--border);scrollbar-width:none;
+}
+.topics-bar::-webkit-scrollbar{display:none}
+.topic-chip{
+  white-space:nowrap;padding:5px 12px;border-radius:20px;
+  font-size:12px;font-weight:500;cursor:pointer;
+  border:1px solid var(--border);background:var(--card);color:var(--muted);
+  transition:all .2s;flex-shrink:0;
+}
+.topic-chip:active{border-color:var(--saffron);color:var(--saffron);background:rgba(255,153,51,.08)}
+
+.chat-area{
+  flex:1;overflow-y:auto;padding:14px;
+  display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth;
+  min-height:0;
+}
+.chat-area::-webkit-scrollbar{width:4px}
+.chat-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* messages */
+.msg{display:flex;gap:8px;animation:msgIn .3s ease;max-width:100%}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.msg.tutor{flex-direction:row}
+.msg.user{flex-direction:row-reverse}
+.msg-av{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;margin-top:2px;
+}
+.msg.tutor .msg-av{background:linear-gradient(135deg,#FF9933,#FF6600)}
+.msg.user  .msg-av{background:linear-gradient(135deg,#238636,#2EA043)}
+.msg-body{max-width:calc(100% - 70px);display:flex;flex-direction:column;gap:3px}
+.msg.user .msg-body{align-items:flex-end}
+.bubble{
+  padding:12px 15px;border-radius:18px;
+  font-size:13.5px;line-height:1.65;
+}
+.msg.tutor .bubble{
+  background:linear-gradient(160deg,#1e2c42 0%,#1a2332 100%);
+  border:1px solid rgba(255,153,51,.2);
+  border-top-left-radius:4px;
+  box-shadow:0 2px 12px rgba(0,0,0,.25);
+}
+.msg.user .bubble{
+  background:linear-gradient(160deg,#1e2e1e 0%,#1a2d1a 100%);
+  border:1px solid rgba(63,185,80,.25);
+  border-top-right-radius:4px;
+  box-shadow:0 2px 12px rgba(0,0,0,.2);
+}
+.bubble .devanagari{font-family:'Noto Sans Devanagari',sans-serif;font-size:20px;font-weight:600;color:var(--saffron2);display:block;margin:3px 0}
+.bubble .roman{color:var(--blue);font-style:italic;font-size:12px}
+.bubble .correct{color:var(--green);font-weight:600}
+.bubble .wrong{color:var(--red)}
+.bubble .highlight{color:var(--saffron2);font-weight:600}
+
+/* ── WORD CARD ── */
+.bubble .word-card{
+  border-radius:14px;padding:0;margin:10px 0;
+  overflow:hidden;
+  border:1px solid rgba(255,153,51,.25);
+  box-shadow:0 3px 14px rgba(0,0,0,.3);
+}
+.wc-header{
+  background:linear-gradient(135deg,rgba(255,153,51,.18) 0%,rgba(255,100,0,.1) 100%);
+  border-bottom:1px solid rgba(255,153,51,.2);
+  padding:12px 14px 10px;
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+  text-align:center;
+}
+.bubble .word-card .wc-lang{font-size:8px;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;font-weight:600}
+.bubble .word-card .wc-word{font-size:15px;font-weight:700}
+.bubble .word-card .wc-word.hi{
+  font-family:'Noto Sans Devanagari',sans-serif;
+  color:var(--saffron2);font-size:22px;
+  line-height:1.3;
+  text-shadow:0 0 20px rgba(255,180,71,.3);
+}
+.bubble .word-card .wc-word.ta{font-family:'Noto Sans Tamil',sans-serif;color:#FFB3D1;font-size:16px}
+.bubble .word-card .wc-word.en{color:var(--blue)}
+.wc-footer{
+  background:rgba(15,18,26,.5);
+  padding:8px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.wc-roman{
+  color:var(--blue);font-style:italic;font-size:12.5px;
+  display:flex;align-items:center;gap:5px;
+}
+.wc-roman::before{content:'🔊';font-style:normal;font-size:12px}
+.wc-hear-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  background:linear-gradient(135deg,rgba(255,153,51,.2),rgba(255,100,0,.15));
+  border:1px solid rgba(255,153,51,.35);
+  border-radius:20px;padding:4px 11px;
+  font-size:11px;font-weight:600;color:var(--saffron);
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.wc-hear-btn:active{background:rgba(255,153,51,.35);transform:scale(.96)}
+
+/* ── TIP BOX ── */
+.bubble .tip-box{
+  background:linear-gradient(135deg,rgba(188,140,255,.12),rgba(140,100,255,.06));
+  border:1px solid rgba(188,140,255,.3);
+  border-radius:12px;
+  padding:10px 13px;margin:10px 0;
+  font-size:12.5px;color:#D4BFFF;
+  display:flex;gap:8px;align-items:flex-start;
+  box-shadow:0 2px 8px rgba(188,140,255,.1);
+}
+.bubble .tip-box::before{content:'💡';flex-shrink:0;font-size:14px;margin-top:1px}
+
+/* ── BOTTOM HEAR PILL ── */
+.speak-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:linear-gradient(135deg,rgba(255,153,51,.15),rgba(255,80,0,.1));
+  border:1px solid rgba(255,153,51,.3);
+  border-radius:20px;padding:5px 13px;font-size:11.5px;font-weight:600;
+  color:var(--saffron);cursor:pointer;margin-top:6px;transition:all .2s;
+}
+.speak-pill:active{background:rgba(255,153,51,.3);transform:scale(.96)}
+.msg-time{font-size:10px;color:var(--muted);padding:0 3px}
+
+.typing-indicator{
+  display:flex;gap:4px;align-items:center;
+  padding:12px 14px;background:var(--tutor-bg);
+  border:1px solid rgba(255,153,51,.15);
+  border-radius:14px;border-top-left-radius:3px;width:fit-content;
+}
+.typing-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--saffron);
+  animation:bounce 1.2s infinite;
+}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-5px);opacity:1}}
+
+/* chat input */
+.chat-input-wrap{
+  padding:8px 12px;padding-bottom:max(8px,env(safe-area-inset-bottom));
+  background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;
+}
+.recording-status{
+  display:none;align-items:center;gap:7px;padding:5px 9px;
+  background:rgba(248,81,73,.1);border-radius:9px;
+  margin-bottom:7px;font-size:12px;color:var(--red);
+}
+.recording-status.show{display:flex}
+.voice-viz{display:none;align-items:center;justify-content:center;gap:2px;height:28px;padding:0 6px}
+.voice-viz.active{display:flex}
+.v-bar{width:3px;background:var(--saffron);border-radius:3px;animation:vb .6s ease-in-out infinite alternate}
+.v-bar:nth-child(1){height:6px;animation-delay:0s}
+.v-bar:nth-child(2){height:14px;animation-delay:.1s}
+.v-bar:nth-child(3){height:22px;animation-delay:.2s}
+.v-bar:nth-child(4){height:14px;animation-delay:.3s}
+.v-bar:nth-child(5){height:8px;animation-delay:.4s}
+@keyframes vb{from{transform:scaleY(.4)}to{transform:scaleY(1)}}
+.input-row{
+  display:flex;align-items:flex-end;gap:7px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:7px 9px 7px 12px;
+  transition:border-color .2s;
+}
+.input-row:focus-within{border-color:rgba(255,153,51,.5)}
+.chat-inp{
+  flex:1;background:none;border:none;outline:none;
+  font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);
+  resize:none;max-height:90px;line-height:1.5;min-height:22px;align-self:center;
+}
+.chat-inp::placeholder{color:var(--muted)}
+.voice-btn{
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--border);
+  background:var(--card);color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  transition:all .2s;flex-shrink:0;
+}
+.voice-btn.recording{background:rgba(248,81,73,.15);border-color:var(--red);color:var(--red);animation:pr 1s infinite}
+@keyframes pr{0%{box-shadow:0 0 0 0 rgba(248,81,73,.4)}70%{box-shadow:0 0 0 7px rgba(248,81,73,0)}100%{box-shadow:0 0 0 0 rgba(248,81,73,0)}}
+.send-btn{
+  width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  background:linear-gradient(135deg,var(--saffron),#FF6600);color:#000;
+  flex-shrink:0;transition:transform .15s,opacity .2s;
+}
+.send-btn:disabled{opacity:.35;cursor:not-allowed}
+.send-btn:not(:disabled):active{transform:scale(.92)}
+.input-hint{text-align:center;font-size:10px;color:var(--muted);margin-top:5px}
+.input-hint span{color:var(--saffron)}
+
+/* ════════════════════════════
+   MY PATH SCREEN
+════════════════════════════ */
+.path-screen{overflow-y:auto}
+.path-inner{padding:16px 14px;overflow-y:auto;flex:1}
+
+/* Stats strip */
+.stats-strip{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;
+}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:12px 10px;text-align:center;
+}
+.stat-num{
+  font-family:'Lora',serif;font-size:24px;font-weight:700;color:var(--saffron);
+}
+.stat-label{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
+
+/* Path section toggle tabs */
+.path-tabs{
+  display:flex;background:var(--card);border-radius:12px;padding:4px;
+  margin-bottom:18px;gap:4px;
+}
+.path-tab{
+  flex:1;padding:8px;border-radius:9px;border:none;cursor:pointer;
+  font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;
+  color:var(--muted);background:none;transition:all .2s;
+}
+.path-tab.active{background:var(--saffron);color:#000}
+
+/* Path content panels */
+.path-panel{display:none}
+.path-panel.active{display:block}
+
+/* Level section */
+.level-section{margin-bottom:24px}
+.level-header{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+}
+.level-badge{
+  width:32px;height:32px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+}
+.level-badge.b{background:rgba(63,185,80,.15);border:1px solid rgba(63,185,80,.3)}
+.level-badge.i{background:rgba(255,153,51,.15);border:1px solid rgba(255,153,51,.3)}
+.level-badge.a{background:rgba(188,140,255,.15);border:1px solid rgba(188,140,255,.3)}
+.level-title{font-size:14px;font-weight:700}
+.level-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.level-progress-bar{
+  height:4px;background:var(--border);border-radius:4px;margin-bottom:12px;overflow:hidden;
+}
+.level-progress-fill{height:100%;background:linear-gradient(90deg,var(--saffron),#FF6600);border-radius:4px;transition:width .5s ease}
+
+/* Lesson cards */
+.lesson-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:13px 14px;margin-bottom:8px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;
+  transition:transform .15s,border-color .2s;position:relative;overflow:hidden;
+}
+.lesson-card:active{transform:scale(.98)}
+.lesson-card.done{border-color:rgba(63,185,80,.3)}
+.lesson-card.locked{opacity:.5;cursor:not-allowed}
+.lesson-card.active-lesson{border-color:rgba(255,153,51,.4);background:rgba(255,153,51,.04)}
+.lesson-icon{
+  width:40px;height:40px;border-radius:12px;background:var(--surface);
+  border:1px solid var(--border);display:flex;align-items:center;
+  justify-content:center;font-size:20px;flex-shrink:0;
+}
+.lesson-info{flex:1;min-width:0}
+.lesson-name{font-size:14px;font-weight:600}
+.lesson-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.lesson-status{font-size:18px;flex-shrink:0}
+
+/* Achievements */
+.badges-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.badge-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:14px 12px;text-align:center;
+  transition:border-color .2s;
+}
+.badge-card.earned{border-color:rgba(255,153,51,.35);background:rgba(255,153,51,.04)}
+.badge-card.locked-badge{opacity:.4}
+.badge-icon{font-size:30px;margin-bottom:8px;display:block}
+.badge-name{font-size:12px;font-weight:700;margin-bottom:4px}
+.badge-desc{font-size:11px;color:var(--muted);line-height:1.4}
+.badge-earned-date{font-size:10px;color:var(--green);margin-top:6px;font-weight:600}
+
+/* How to Use */
+.how-section{margin-bottom:20px}
+.how-step{
+  display:flex;gap:13px;align-items:flex-start;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:14px;margin-bottom:10px;
+}
+.how-num{
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--saffron),#FF6600);
+  color:#000;font-size:13px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.how-content h4{font-size:13px;font-weight:700;margin-bottom:4px}
+.how-content p{font-size:12px;color:var(--muted);line-height:1.5}
+.how-tip{
+  background:rgba(188,140,255,.08);border:1px solid rgba(188,140,255,.2);
+  border-radius:12px;padding:12px 14px;margin-top:4px;
+  font-size:12px;color:#D4BFFF;display:flex;gap:8px;align-items:flex-start;
+}
+
+/* Toast badge notification */
+.badge-toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:linear-gradient(135deg,rgba(255,153,51,.95),rgba(255,100,0,.95));
+  color:#000;border-radius:14px;padding:12px 18px;
+  font-size:13px;font-weight:700;
+  display:flex;align-items:center;gap:10px;
+  box-shadow:0 6px 28px rgba(255,153,51,.4);
+  z-index:300;opacity:0;transition:all .4s;pointer-events:none;white-space:nowrap;
+}
+.badge-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── SETTINGS PANEL ── */
+.settings-panel{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:200;align-items:flex-end;justify-content:center;
+}
+.settings-panel.show{display:flex}
+.settings-box{
+  background:var(--surface);border-radius:24px 24px 0 0;
+  padding:24px 20px 40px;width:100%;max-width:480px;
+  animation:slideUp .3s ease;border-top:1px solid var(--border);
+  max-height:85vh;overflow-y:auto;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+.settings-box h2{font-family:'Lora',serif;font-size:18px;color:var(--saffron);margin-bottom:4px}
+.settings-box p{font-size:13px;color:var(--muted);margin-bottom:18px}
+.s-close{float:right;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer}
+.s-label{font-size:11px;color:var(--muted);display:block;margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase}
+.s-input{
+  width:100%;background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:11px 13px;color:var(--text);
+  font-family:'Outfit',sans-serif;font-size:14px;outline:none;margin-bottom:14px;
+}
+.s-input:focus{border-color:var(--saffron)}
+.s-row{display:flex;gap:7px;margin-bottom:14px}
+.s-pill{
+  flex:1;padding:9px;text-align:center;
+  border-radius:9px;border:1px solid var(--border);
+  background:var(--card);cursor:pointer;font-size:12px;
+  transition:all .2s;
+}
+.s-pill.active{border-color:var(--saffron);background:rgba(255,153,51,.1);color:var(--saffron);font-weight:600}
+.s-save{
+  width:100%;padding:13px;border:none;border-radius:11px;
+  background:linear-gradient(135deg,var(--saffron),#FF6600);
+  color:#000;font-size:15px;font-weight:700;
+  font-family:'Outfit',sans-serif;cursor:pointer;
+}
+.s-info{
+  background:rgba(255,153,51,.08);border:1px solid rgba(255,153,51,.2);
+  border-radius:10px;padding:10px 13px;font-size:12px;color:var(--muted);
+  margin-bottom:14px;
+}
+.s-info a{color:var(--saffron);text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ── -->
+<div class="topbar">
+  <div class="logo-small"><span>हिं</span>HindiPath</div>
+  <div class="user-chip" onclick="openSettings()">
+    <div class="av">{{ user.username[0].upper() }}</div>
+    {{ user.username }}
+  </div>
+  <div class="icon-btn" onclick="openSettings()" title="Settings">⚙️</div>
+  <a href="/logout" class="icon-btn" title="Logout">🚪</a>
+</div>
+
+<!-- ── TAB BAR ── -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-tutor" onclick="switchTab('tutor')">
+    <span class="ico">🧑‍🏫</span>Tutor
+  </button>
+  <button class="tab-btn" id="tab-path" onclick="switchTab('path')">
+    <span class="ico">🗺️</span>My Path
+  </button>
+</div>
+
+<!-- ════════════════════════════════
+     TUTOR SCREEN
+════════════════════════════════ -->
+<div class="screen active" id="screen-tutor" style="flex-direction:column">
+
+  <div class="tutor-header">
+    <div class="tutor-av">🧑‍🏫<div class="dot"></div></div>
+    <div class="tutor-info">
+      <div class="tutor-name">गुरुजी – Your Hindi Tutor</div>
+      <div class="tutor-status" id="tutorStatus">● Online • Ready to teach</div>
+    </div>
+    <div class="icon-btn" onclick="clearChat()" title="Clear chat">🗑️</div>
+  </div>
+
+  <div class="topics-bar">
+    <div class="topic-chip" onclick="sendTopic('Teach me basic greetings in Hindi')">👋 Greetings</div>
+    <div class="topic-chip" onclick="sendTopic('Teach me numbers 1 to 10 in Hindi')">🔢 Numbers</div>
+    <div class="topic-chip" onclick="sendTopic('How do I pronounce Hindi alphabets?')">🔤 Alphabets</div>
+    <div class="topic-chip" onclick="sendTopic('Teach me food and drink words in Hindi')">🍛 Food</div>
+    <div class="topic-chip" onclick="sendTopic('How to say family members in Hindi?')">👨‍👩‍👧 Family</div>
+    <div class="topic-chip" onclick="sendTopic('Teach me colors in Hindi')">🎨 Colors</div>
+    <div class="topic-chip" onclick="sendTopic('How do I introduce myself in Hindi?')">🙋 Intro</div>
+    <div class="topic-chip" onclick="sendTopic('Quiz me on 5 Hindi words I should know')">🎯 Quiz Me</div>
+  </div>
+
+  <div class="chat-area" id="chatArea"></div>
+
+  <div class="chat-input-wrap">
+    <div class="recording-status" id="recStatus">🔴 Listening… <span id="recTimer">0s</span></div>
+    <div class="input-row">
+      <div class="voice-viz" id="voiceViz">
+        <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
+        <div class="v-bar"></div><div class="v-bar"></div>
+      </div>
+      <textarea class="chat-inp" id="chatInp"
+        placeholder="Ask in Tamil, English or Hindi…"
+        rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">🎤</button>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">➤</button>
+    </div>
+    <div class="input-hint">Ask in <span>Tamil</span> or <span>English</span> — Gurujee answers with Hindi pronunciation</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MY PATH SCREEN
+════════════════════════════════ -->
+<div class="screen" id="screen-path">
+  <div class="path-inner">
+
+    <!-- Stats strip -->
+    <div class="stats-strip">
+      <div class="stat-card"><div class="stat-num" id="statWords">0</div><div class="stat-label">Words</div></div>
+      <div class="stat-card"><div class="stat-num" id="statLessons">0</div><div class="stat-label">Lessons</div></div>
+      <div class="stat-card"><div class="stat-num" id="statBadges">0</div><div class="stat-label">Badges</div></div>
+    </div>
+
+    <!-- Sub-tabs -->
+    <div class="path-tabs">
+      <button class="path-tab active" onclick="switchPathTab('learn',this)">🗺️ Learning Path</button>
+      <button class="path-tab" onclick="switchPathTab('badges',this)">🏆 Achievements</button>
+      <button class="path-tab" onclick="switchPathTab('howto',this)">❓ How to Use</button>
+    </div>
+
+    <!-- LEARNING PATH panel -->
+    <div class="path-panel active" id="panel-learn">
+      <div id="pathContent">Loading…</div>
+    </div>
+
+    <!-- ACHIEVEMENTS panel -->
+    <div class="path-panel" id="panel-badges">
+      <div class="badges-grid" id="badgesGrid">Loading…</div>
+    </div>
+
+    <!-- HOW TO USE panel -->
+    <div class="path-panel" id="panel-howto">
+      <div class="how-section">
+        <div class="how-step">
+          <div class="how-num">1</div>
+          <div class="how-content">
+            <h4>Start in the Tutor tab 🧑‍🏫</h4>
+            <p>Tap "Tutor" at the bottom. Gurujee is your AI Hindi teacher. Ask anything in Tamil or English — he'll always reply with Hindi + Roman + English + Tamil.</p>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">2</div>
+          <div class="how-content">
+            <h4>Use the Quick Topic chips</h4>
+            <p>Tap chips like 👋 Greetings or 🔢 Numbers to start a structured lesson. Gurujee teaches 3–5 words at a time so it doesn't feel overwhelming.</p>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">3</div>
+          <div class="how-content">
+            <h4>Tap 🔊 Hear on every word card</h4>
+            <p>Each word card has a Hear button — tap it to hear real Hindi audio. Listen and repeat out loud. Pronunciation is the most important skill to build early.</p>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">4</div>
+          <div class="how-content">
+            <h4>Look for Tamil connections 💡</h4>
+            <p>Gurujee always gives you Tamil sound tips — like "क sounds like க". Use these to lock words into your memory. Your Tamil brain is a huge advantage!</p>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">5</div>
+          <div class="how-content">
+            <h4>Follow the Learning Path 🗺️</h4>
+            <p>In this tab, go through Beginner → Intermediate → Advanced in order. Tap any lesson to jump straight to it in the Tutor tab. Mark lessons done as you go.</p>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">6</div>
+          <div class="how-content">
+            <h4>Earn Achievements 🏆</h4>
+            <p>Tap the Achievements tab to see your badges. Earn them by learning words, completing lessons, and chatting with Gurujee. They unlock automatically!</p>
+          </div>
+        </div>
+        <div class="how-tip">
+          💡 <span><strong>Pro tip:</strong> Don't rush. Learn 3–5 words well before moving on. Come back daily — even 5 minutes a day beats an hour once a week!</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Badge toast notification -->
+<div class="badge-toast" id="badgeToast">🏆 <span id="badgeToastText"></span></div>
+
+
+<!-- ════════════════════════════════
+     SETTINGS PANEL
+════════════════════════════════ -->
+<div class="settings-panel" id="settingsPanel" onclick="outsideClose(event)">
+  <div class="settings-box">
+    <button class="s-close" onclick="closeSettings()">✕</button>
+    <h2>⚙️ Settings</h2>
+    <p>Logged in as <strong style="color:var(--saffron)">{{ user.username }}</strong></p>
+
+    <label class="s-label">Your Language</label>
+    <div class="s-row" id="langRow">
+      <div class="s-pill {% if user.my_lang=='tamil' %}active{% endif %}" onclick="setPill(this,'langRow')">தமிழ் Tamil</div>
+      <div class="s-pill {% if user.my_lang=='english' %}active{% endif %}" onclick="setPill(this,'langRow')">English</div>
+      <div class="s-pill {% if user.my_lang=='both' %}active{% endif %}" onclick="setPill(this,'langRow')">Both</div>
+    </div>
+
+    <label class="s-label">Your Level</label>
+    <div class="s-row" id="lvlRow">
+      <div class="s-pill {% if user.teach_level=='beginner' %}active{% endif %}" onclick="setPill(this,'lvlRow')">Beginner</div>
+      <div class="s-pill {% if user.teach_level=='intermediate' %}active{% endif %}" onclick="setPill(this,'lvlRow')">Intermediate</div>
+      <div class="s-pill {% if user.teach_level=='advanced' %}active{% endif %}" onclick="setPill(this,'lvlRow')">Advanced</div>
+    </div>
+
+    <button class="s-save" onclick="saveSettings()">💾 Save Settings</button>
+    <div style="margin-top:14px;text-align:center">
+      <a href="/logout" style="font-size:12px;color:var(--muted);text-decoration:none">🚪 Sign Out</a>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════ -->
+<script>
+// ── State
+let isBusy      = false;
+let isRec       = false;
+let recognition = null;
+let recInt      = null;
+let recSec      = 0;
+let currentLessonId = '';
+let progressData = null;
+
+// Learning path definition
+const LEARNING_PATH = {
+  beginner: {
+    label:"🌱 Beginner", color:"green",
+    lessons:[
+      {id:"greetings",  icon:"👋", name:"Greetings",        desc:"Hello, goodbye, thank you, please"},
+      {id:"numbers",    icon:"🔢", name:"Numbers 1–20",      desc:"Count from ek to bees"},
+      {id:"colors",     icon:"🎨", name:"Colors",            desc:"Red, blue, green, yellow and more"},
+      {id:"family",     icon:"👨‍👩‍👧", name:"Family Members",    desc:"Maa, baap, bhai, behen…"},
+      {id:"food",       icon:"🍛", name:"Food & Drinks",     desc:"Roti, chawal, paani, chai"},
+      {id:"daily_life", icon:"🏠", name:"Daily Life",        desc:"Home, school, work, market"},
+    ]
+  },
+  intermediate: {
+    label:"🔥 Intermediate", color:"saffron",
+    lessons:[
+      {id:"time_days",  icon:"🕐", name:"Time & Days",       desc:"Tell the time, days of the week"},
+      {id:"directions", icon:"🗺️", name:"Directions",        desc:"Left, right, straight, near, far"},
+      {id:"shopping",   icon:"🛒", name:"Shopping",           desc:"How much? Expensive, cheap, buy"},
+      {id:"sentences",  icon:"💬", name:"Basic Sentences",    desc:"Mera naam… Mujhe… Kya aap…"},
+      {id:"weather",    icon:"🌦️", name:"Weather",            desc:"Hot, cold, rain, sunny"},
+    ]
+  },
+  advanced: {
+    label:"🚀 Advanced", color:"purple",
+    lessons:[
+      {id:"idioms",     icon:"📖", name:"Common Idioms",      desc:"Expressions natives actually use"},
+      {id:"formal",     icon:"🏛️", name:"Formal Hindi",       desc:"Professional and respectful speech"},
+      {id:"grammar",    icon:"📝", name:"Grammar Deep Dive",  desc:"Verb conjugations, gender, cases"},
+      {id:"culture",    icon:"🎭", name:"Culture & Context",  desc:"Festivals, traditions, Bollywood"},
+    ]
+  }
+};
+
+const LESSON_PROMPTS = {
+  greetings:  "Teach me Hindi greetings — hello, goodbye, good morning, thank you, please, excuse me. Include Tamil memory tips.",
+  numbers:    "Teach me Hindi numbers 1 to 10. Show Devanagari, Roman, and Tamil connections.",
+  colors:     "Teach me colors in Hindi — red, blue, green, yellow, white, black. Tamil connections please.",
+  family:     "Teach me family member words in Hindi — mother, father, brother, sister, son, daughter.",
+  food:       "Teach me Hindi words for food and drinks — rice, bread, water, tea, milk, vegetables.",
+  daily_life: "Teach me Hindi words for daily life — home, school, work, market, road, shop.",
+  time_days:  "Teach me how to say time and days of the week in Hindi.",
+  directions: "Teach me direction words in Hindi — left, right, straight, near, far, stop.",
+  shopping:   "Teach me Hindi phrases for shopping — how much does this cost, expensive, cheap, give me.",
+  sentences:  "Teach me 5 essential Hindi sentence patterns for beginners.",
+  weather:    "Teach me Hindi words for weather — hot, cold, rain, sunny, cloudy, wind.",
+  idioms:     "Teach me 5 common Hindi idioms or expressions that natives actually use.",
+  formal:     "Teach me formal and polite Hindi — professional greetings, respectful speech, office language.",
+  grammar:    "Explain key Hindi grammar — verb conjugation, gender agreement, and sentence structure.",
+  culture:    "Tell me about Hindi used in Indian culture — festivals, traditions, Bollywood expressions.",
+};
+
+
+// ── Tab switch
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if (tab === 'path') loadPathScreen();
+}
+
+// ══════════════════════════════════
+//  TUTOR CHAT
+// ══════════════════════════════════
+function formatBubble(text) {
+  let html = '';
+  const lines = text.split('\n');
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) { html += '<br>'; continue; }
+    // Word card:  Hindi | Roman | English | Tamil: xxx
+    if (/^[\u0900-\u097F].*\|.*\|/.test(t)) {
+      const p = t.split('|').map(x=>x.trim());
+      const hindi = p[0] || '';
+      const roman = p[1] || '';
+      const eng   = p[2] || '';
+      const ta    = (p[3]||'').replace(/Tamil:\s*/i,'').trim();
+      const safe  = hindi.replace(/`/g,'');
+      html += `<div class="word-card">
+        <div class="wc-header">
+          <div><div class="wc-lang">Hindi</div><div class="wc-word hi">${hindi}</div></div>
+          <div><div class="wc-lang">English</div><div class="wc-word en">${eng}</div></div>
+          <div><div class="wc-lang">Tamil</div><div class="wc-word ta">${ta||'–'}</div></div>
+        </div>
+        <div class="wc-footer">
+          <span class="wc-roman">${roman}</span>
+          <span class="wc-hear-btn" onclick="speakHindi(\`${safe}\`)">🔊 Hear</span>
+        </div>
+      </div>`;
+      continue;
+    }
+    if (t.startsWith('(') && t.endsWith(')')) {
+      html += `<div class="tip-box">${t.slice(1,-1)}</div>`; continue;
+    }
+    if (/shabash|शाबाश|correct|well done|excellent|wah|वाह/i.test(t)) {
+      html += `<p><span class="correct">✅ ${t}</span></p>`; continue;
+    }
+    const f = t.replace(/\*\*(.*?)\*\*/g,'<strong class="highlight">$1</strong>');
+    html += `<p>${f}</p>`;
+  }
+  return html;
+}
+
+function addMsg(role, text, rich=false) {
+  const area  = document.getElementById('chatArea');
+  const div   = document.createElement('div');
+  div.className = `msg ${role}`;
+  const time  = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const av    = role === 'tutor' ? '🧑‍🏫' : '{{ user.username[0].upper() }}';
+  let body = '';
+  if (role === 'tutor' && rich) {
+    body = formatBubble(text);
+    if (/[\u0900-\u097F]/.test(text)) {
+      // Extract only word-card Hindi (pipe-separated lines), not praise/shabash text
+      const hiWords = text.split('\n')
+        .filter(line => /[\u0900-\u097F]/.test(line) && line.includes('|'))
+        .map(line => line.split('|')[0].replace(/\[|\]/g,'').trim())
+        .filter(w => w.length > 0);
+      const hi = hiWords.join(' ');
+      if (hi) body += `<div><span class="speak-pill" onclick="speakHindi(\`${hi.replace(/`/g,'')}\`)">🔊 Hear pronunciation</span></div>`;
+    }
+  } else {
+    body = `<p>${text.replace(/\n/g,'<br>')}</p>`;
+  }
+  div.innerHTML = `<div class="msg-av">${av}</div>
+    <div class="msg-body"><div class="bubble">${body}</div>
+    <div class="msg-time">${time}</div></div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function addTyping() {
+  const area = document.getElementById('chatArea');
+  const div  = document.createElement('div');
+  div.className = 'msg tutor'; div.id = 'typing';
+  div.innerHTML = `<div class="msg-av">🧑‍🏫</div>
+    <div class="msg-body"><div class="typing-indicator">
+      <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+    </div></div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+function removeTyping() { document.getElementById('typing')?.remove(); }
+
+async function sendMessage(override, lessonId) {
+  const inp  = document.getElementById('chatInp');
+  const text = (override || inp.value).trim();
+  if (!text || isBusy) return;
+  isBusy = true;
+  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('tutorStatus').textContent = '● Gurujee is thinking…';
+  if (!override) { inp.value = ''; inp.style.height = 'auto'; }
+  addMsg('user', text);
+  addTyping();
+
+  try {
+    const r = await fetch('/api/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message: text, lesson_id: lessonId || currentLessonId || ''})
+    });
+    const d = await r.json();
+    removeTyping();
+    if (d.error) {
+      addMsg('tutor', `⚠️ ${d.error}`, false);
+    } else {
+      addMsg('tutor', d.reply, true);
+      // Show badge toasts for any newly earned badges
+      if (d.new_badges && d.new_badges.length > 0) {
+        d.new_badges.forEach((b, i) => setTimeout(() => showBadgeToast(b), i * 1800));
+        loadPathScreen(); // refresh path if open
+      }
+    }
+  } catch(e) {
+    removeTyping();
+    addMsg('tutor', `⚠️ Network error: ${e.message}`, false);
+  }
+  document.getElementById('tutorStatus').textContent = '● Online • Ready to teach';
+  isBusy = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+
+function sendTopic(t) { document.getElementById('chatInp').value=t; sendMessage(); }
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,90)+'px'; }
+
+async function clearChat() {
+  if (!confirm('Clear all chat history?')) return;
+  await fetch('/api/chat/clear',{method:'POST'});
+  document.getElementById('chatArea').innerHTML = '';
+  showWelcome();
+}
+
+function showWelcome() {
+  addMsg('tutor', `வணக்கம்! 🙏 Vanakkam! Welcome back!
+
+I'm **Gurujee** — your personal Hindi tutor for Tamil speakers.
+
+नमस्ते | Namaste | Hello | Tamil: வணக்கம்
+(Tip: Say "Na-ma-stay" — like folding hands in greeting!)
+
+Pick a topic above or ask me anything in Tamil or English. What shall we learn today?`, true);
+}
+
+// ── Voice input (Tutor)
+function toggleVoice() { isRec ? stopVoice() : startVoice(); }
+function startVoice() {
+  const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+  if (!SR) { alert('Voice not supported. Please use Chrome.'); return; }
+  recognition = new SR(); recognition.lang='en-IN'; recognition.continuous=false; recognition.interimResults=true;
+  recognition.onstart = () => {
+    isRec=true; recSec=0;
+    document.getElementById('voiceBtn').classList.add('recording');
+    document.getElementById('voiceBtn').textContent='⏹';
+    document.getElementById('recStatus').classList.add('show');
+    document.getElementById('voiceViz').classList.add('active');
+    document.getElementById('chatInp').placeholder='Listening…';
+    recInt = setInterval(()=>{ recSec++; document.getElementById('recTimer').textContent=recSec+'s'; },1000);
+  };
+  recognition.onresult = e => {
+    const t = Array.from(e.results).map(r=>r[0].transcript).join('');
+    document.getElementById('chatInp').value=t;
+    autoResize(document.getElementById('chatInp'));
+  };
+  recognition.onend = () => { stopVoice(); const v=document.getElementById('chatInp').value.trim(); if(v)sendMessage(); };
+  recognition.onerror = e => { stopVoice(); };
+  recognition.start();
+}
+function stopVoice() {
+  isRec=false; clearInterval(recInt);
+  document.getElementById('voiceBtn').classList.remove('recording');
+  document.getElementById('voiceBtn').textContent='🎤';
+  document.getElementById('recStatus').classList.remove('show');
+  document.getElementById('voiceViz').classList.remove('active');
+  document.getElementById('chatInp').placeholder='Ask in Tamil, English or Hindi…';
+  if(recognition){try{recognition.stop();}catch(e){}recognition=null;}
+}
+
+// ── TTS — Sarvam bulbul:v3 via backend /api/tts
+let _ttsAudio = null;
+
+async function speakHindi(text) {
+  if (!text || !text.trim()) return;
+
+  // Stop anything currently playing
+  if (_ttsAudio) { try { _ttsAudio.pause(); } catch(e){} _ttsAudio = null; }
+  try { window.speechSynthesis?.cancel(); } catch(e) {}
+
+  // Update button label
+  document.querySelectorAll('.speak-pill').forEach(b => b.textContent = '⏳ Loading…');
+
+  try {
+    const res = await fetch('/api/tts', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ text: text.trim() })
+    });
+
+    if (!res.ok) {
+      // Read error as text first — safer than .json() which can fail
+      const raw = await res.text();
+      let errMsg = `HTTP ${res.status}`;
+      let rawDetail = '';
+      try {
+        const parsed = JSON.parse(raw);
+        errMsg = parsed.error || errMsg;
+        rawDetail = parsed.raw || '';
+      } catch(e) { errMsg = raw.slice(0,300) || errMsg; }
+      resetSpeakBtns();
+      addMsg('tutor', `⚠️ TTS Error (${res.status}): ${errMsg}${rawDetail ? '\nRaw: ' + rawDetail : ''}\n\n👉 Check your server terminal for full error details.`, false);
+      return;
+    }
+
+    // Check content-type — should be audio (wav or mpeg)
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('audio') && !ct.includes('mpeg') && !ct.includes('octet')) {
+      const raw = await res.text();
+      resetSpeakBtns();
+      addMsg('tutor', `⚠️ TTS returned non-audio response: ${raw.slice(0,200)}`, false);
+      return;
+    }
+
+    const blob  = await res.blob();
+    if (blob.size < 100) {
+      resetSpeakBtns();
+      addMsg('tutor', '⚠️ TTS returned empty audio. Check your Sarvam key in ⚙️ Settings.', false);
+      return;
+    }
+
+    const url  = URL.createObjectURL(blob);
+    _ttsAudio  = new Audio(url);
+
+    _ttsAudio.oncanplaythrough = () => {
+      _ttsAudio.play().catch(e => {
+        // Autoplay blocked — show a click-to-play button instead
+        resetSpeakBtns('▶ Click to play');
+        addMsg('tutor',
+          `<audio controls src="${url}" style="width:100%;margin-top:6px;border-radius:8px"></audio>`,
+          false);
+      });
+    };
+
+    _ttsAudio.onplay  = () => resetSpeakBtns('🔊 Playing…');
+    _ttsAudio.onended = () => { URL.revokeObjectURL(url); _ttsAudio = null; resetSpeakBtns(); };
+    _ttsAudio.onerror = (e) => {
+      console.error('Audio playback error:', e);
+      resetSpeakBtns();
+      // Expose the audio element so user can manually play
+      addMsg('tutor',
+        `🔊 <audio controls src="${url}" style="width:100%;margin-top:4px;border-radius:8px"></audio>`,
+        false);
+    };
+
+    _ttsAudio.load();
+
+  } catch(networkErr) {
+    resetSpeakBtns();
+    addMsg('tutor', `⚠️ Could not reach /api/tts: ${networkErr.message}`, false);
+  }
+}
+
+function resetSpeakBtns(label) {
+  document.querySelectorAll('.speak-pill').forEach(b => b.textContent = label || '🔊 Hear pronunciation');
+}
+
+
+// ══════════════════════════════════
+//  MY PATH SCREEN
+// ══════════════════════════════════
+function switchPathTab(tab, btn) {
+  document.querySelectorAll('.path-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.path-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+async function loadPathScreen() {
+  const r = await fetch('/api/progress');
+  const d = await r.json();
+  progressData = d;
+
+  // Update stats
+  document.getElementById('statWords').textContent   = d.word_count;
+  document.getElementById('statLessons').textContent = d.lessons.filter(l=>l.completed).length;
+  document.getElementById('statBadges').textContent  = d.badges.length;
+
+  renderLearningPath(d);
+  renderBadges(d);
+}
+
+function renderLearningPath(d) {
+  const completedIds = new Set(d.lessons.filter(l=>l.completed).map(l=>l.lesson_id));
+  const seenIds      = new Set(d.lessons.map(l=>l.lesson_id));
+  let html = '';
+
+  for (const [levelKey, level] of Object.entries(LEARNING_PATH)) {
+    const doneCount  = level.lessons.filter(l => completedIds.has(l.id)).length;
+    const total      = level.lessons.length;
+    const pct        = Math.round((doneCount/total)*100);
+
+    html += `<div class="level-section">
+      <div class="level-header">
+        <div class="level-badge ${levelKey[0]}">${level.label.split(' ')[0]}</div>
+        <div>
+          <div class="level-title">${level.label}</div>
+          <div class="level-sub">${doneCount}/${total} lessons complete</div>
+        </div>
+      </div>
+      <div class="level-progress-bar"><div class="level-progress-fill" style="width:${pct}%"></div></div>`;
+
+    level.lessons.forEach((lesson, idx) => {
+      const done    = completedIds.has(lesson.id);
+      const seen    = seenIds.has(lesson.id);
+      // Beginner always unlocked; intermediate unlocks after 3 beginner done; advanced after 3 intermediate done
+      const begDone = LEARNING_PATH.beginner.lessons.filter(l=>completedIds.has(l.id)).length;
+      const intDone = LEARNING_PATH.intermediate.lessons.filter(l=>completedIds.has(l.id)).length;
+      const locked  = (levelKey==='intermediate' && begDone < 3) ||
+                      (levelKey==='advanced' && intDone < 3);
+
+      const statusIcon = done ? '✅' : locked ? '🔒' : seen ? '📖' : '▶';
+      const cls = `lesson-card ${done?'done':''} ${locked?'locked':''} ${(!done&&!locked)?'active-lesson':''}`;
+
+      html += `<div class="${cls}" onclick="${locked ? '' : `startLesson('${lesson.id}','${lesson.name}')`}">
+        <div class="lesson-icon">${lesson.icon}</div>
+        <div class="lesson-info">
+          <div class="lesson-name">${lesson.name}</div>
+          <div class="lesson-desc">${lesson.desc}</div>
+        </div>
+        <div class="lesson-status">${statusIcon}</div>
+      </div>`;
+    });
+
+    html += `</div>`;
+  }
+
+  document.getElementById('pathContent').innerHTML = html;
+}
+
+function renderBadges(d) {
+  const earnedIds = new Set(d.badges.map(b=>b.id));
+  document.getElementById('badgesGrid').innerHTML = d.all_badges.map(b => {
+    const earned = earnedIds.has(b.id);
+    const earnedBadge = d.badges.find(eb=>eb.id===b.id);
+    return `<div class="badge-card ${earned?'earned':'locked-badge'}">
+      <span class="badge-icon">${b.icon}</span>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-desc">${b.desc}</div>
+      ${earned && earnedBadge ? `<div class="badge-earned-date">✓ Earned ${new Date(earnedBadge.earned_at).toLocaleDateString()}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function startLesson(lessonId, lessonName) {
+  currentLessonId = lessonId;
+  const prompt = LESSON_PROMPTS[lessonId] || `Teach me about ${lessonName} in Hindi with Tamil memory tips.`;
+  switchTab('tutor');
+  sendMessage(prompt, lessonId);
+  // Mark started in progress after slight delay
+  setTimeout(() => markLessonDone(lessonId), 30000);
+}
+
+async function markLessonDone(lessonId) {
+  const r = await fetch('/api/progress/complete_lesson', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({lesson_id: lessonId})
+  });
+  const d = await r.json();
+  if (d.new_badges && d.new_badges.length > 0) {
+    d.new_badges.forEach((b, i) => setTimeout(() => showBadgeToast(b), i * 1800));
+  }
+}
+
+function showBadgeToast(badge) {
+  const el   = document.getElementById('badgeToast');
+  const text = document.getElementById('badgeToastText');
+  text.textContent = `${badge.icon} ${badge.name} unlocked! — ${badge.desc}`;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ══════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════
+function openSettings()  { document.getElementById('settingsPanel').classList.add('show'); }
+function closeSettings() { document.getElementById('settingsPanel').classList.remove('show'); }
+function outsideClose(e) { if(e.target.id==='settingsPanel')closeSettings(); }
+function setPill(el, rowId) {
+  document.querySelectorAll(`#${rowId} .s-pill`).forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+}
+async function saveSettings() {
+  const lang  = document.querySelector('#langRow .s-pill.active')?.textContent.includes('Tamil') ? 'tamil'
+              : document.querySelector('#langRow .s-pill.active')?.textContent.includes('English') ? 'english' : 'both';
+  const level = document.querySelector('#lvlRow .s-pill.active')?.textContent.toLowerCase() || 'beginner';
+  await fetch('/api/settings',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({my_lang:lang, teach_level:level})
+  });
+  closeSettings();
+  addMsg('tutor','✅ Settings saved! Level and language updated.', false);
+}
+
+// ══════════════════════════════════
+//  INIT
+// ══════════════════════════════════
+window.addEventListener('load', () => {
+  window.speechSynthesis?.getVoices();
+  window.speechSynthesis?.addEventListener('voiceschanged', ()=>window.speechSynthesis.getVoices());
+  loadHistory();
+});
+
+async function loadHistory() {
+  const r = await fetch('/api/chat/history');
+  const d = await r.json();
+  if (!d.history || d.history.length === 0) {
+    showWelcome();
+  } else {
+    d.history.forEach(m => addMsg(m.role==='assistant'?'tutor':'user', m.content, m.role==='assistant'));
+    document.getElementById('chatArea').scrollTop = 99999;
+  }
+}
+</script>
+</body>
+</html>

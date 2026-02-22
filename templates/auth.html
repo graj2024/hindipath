@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HindiPath – {% if mode=='login' %}Sign In{% else %}Create Account{% endif %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&family=Lora:wght@700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0D1117;--surface:#161B22;--card:#1C2333;--border:#30363D;
+  --saffron:#FF9933;--green:#3FB950;--red:#F85149;--text:#E6EDF3;--muted:#8B949E;
+}
+body{
+  font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  background-image:
+    radial-gradient(ellipse at 20% 30%,rgba(255,153,51,.12) 0%,transparent 55%),
+    radial-gradient(ellipse at 80% 70%,rgba(63,185,80,.07) 0%,transparent 55%);
+}
+.card{
+  width:100%;max-width:420px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:24px;padding:40px 36px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.logo{
+  text-align:center;margin-bottom:32px;
+}
+.logo .devanagari{
+  font-family:'Noto Sans Devanagari',sans-serif;
+  font-size:40px;color:var(--saffron);display:block;line-height:1;
+}
+.logo .brand{
+  font-family:'Lora',serif;font-size:24px;font-weight:900;
+  background:linear-gradient(135deg,var(--saffron),#FFB347);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-top:4px;display:block;
+}
+.logo .tagline{font-size:12px;color:var(--muted);margin-top:6px}
+
+.tabs{display:flex;background:var(--card);border-radius:12px;padding:4px;margin-bottom:28px}
+.tab{
+  flex:1;text-align:center;padding:10px;border-radius:9px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  color:var(--muted);transition:all .2s;text-decoration:none;
+}
+.tab.active{background:var(--saffron);color:#000}
+
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase}
+.input-group{margin-bottom:16px;position:relative}
+.input-group input{
+  width:100%;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:13px 16px;
+  color:var(--text);font-family:'Outfit',sans-serif;font-size:15px;
+  outline:none;transition:border-color .2s;
+}
+.input-group input:focus{border-color:var(--saffron)}
+.input-group input::placeholder{color:var(--muted)}
+.toggle-pw{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;
+}
+
+.error-box{
+  background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);
+  border-radius:10px;padding:10px 14px;font-size:13px;color:var(--red);
+  margin-bottom:16px;display:none;
+}
+.error-box.show{display:block}
+
+.submit-btn{
+  width:100%;padding:14px;border:none;border-radius:12px;
+  background:linear-gradient(135deg,var(--saffron),#FF6600);
+  color:#000;font-size:16px;font-weight:700;
+  font-family:'Outfit',sans-serif;cursor:pointer;
+  transition:transform .15s,opacity .2s;margin-top:4px;
+}
+.submit-btn:hover{opacity:.9}
+.submit-btn:active{transform:scale(.98)}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed}
+
+.divider{
+  display:flex;align-items:center;gap:12px;
+  margin:20px 0;color:var(--muted);font-size:12px;
+}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.features{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px}
+.feature{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:10px 12px;
+  font-size:12px;color:var(--muted);
+}
+.feature .icon{font-size:18px;display:block;margin-bottom:4px}
+
+.spinner{
+  display:inline-block;width:16px;height:16px;
+  border:2px solid rgba(0,0,0,.3);border-top-color:#000;
+  border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <span class="devanagari">हिंदी</span>
+    <span class="brand">HindiPath</span>
+    <div class="tagline">Learn Hindi • தமிழ் வழி • Through English</div>
+  </div>
+
+  <div class="tabs">
+    <a class="tab {% if mode=='login' %}active{% endif %}" href="/login">Sign In</a>
+    <a class="tab {% if mode=='register' %}active{% endif %}" href="/register">Register</a>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  {% if mode == 'register' %}
+  <div class="input-group">
+    <label>Username</label>
+    <input type="text" id="username" placeholder="e.g. rajesh_learns" autocomplete="username">
+  </div>
+  {% endif %}
+
+  <div class="input-group">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+  </div>
+
+  <div class="input-group">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="{% if mode=='login' %}current-password{% else %}new-password{% endif %}" id="password">
+    <button class="toggle-pw" type="button" onclick="togglePw()">👁</button>
+  </div>
+
+  {% if mode == 'register' %}
+  <div class="input-group">
+    <label>Confirm Password</label>
+    <input type="password" id="confirm" placeholder="••••••••">
+  </div>
+  {% endif %}
+
+  <button class="submit-btn" id="submitBtn" onclick="submit()">
+    {% if mode=='login' %}Sign In →{% else %}Create Account →{% endif %}
+  </button>
+
+  {% if mode == 'login' %}
+  <div class="divider">What you get</div>
+  <div class="features">
+    <div class="feature"><span class="icon">🧑‍🏫</span>AI Hindi Tutor powered by Sarvam AI</div>
+    <div class="feature"><span class="icon">🎯</span>Test yourself with pronunciation quizzes</div>
+    <div class="feature"><span class="icon">💾</span>Progress & history saved per user</div>
+    <div class="feature"><span class="icon">🗣️</span>Tamil + English + Hindi all-in-one</div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const MODE = "{{ mode }}";
+
+function showError(msg){
+  const b = document.getElementById('errorBox');
+  b.textContent = msg; b.classList.add('show');
+}
+function clearError(){
+  document.getElementById('errorBox').classList.remove('show');
+}
+
+function togglePw(){
+  const inp = document.getElementById('password');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+document.querySelectorAll('input').forEach(inp => {
+  inp.addEventListener('keydown', e => { if(e.key==='Enter') submit(); });
+});
+
+async function submit(){
+  clearError();
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Please wait…';
+
+  const email    = document.getElementById('email')?.value.trim();
+  const password = document.getElementById('password')?.value;
+
+  if(MODE === 'login'){
+    if(!email||!password){ showError('Please fill in all fields.'); reset(); return; }
+    const r = await fetch('/api/login',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, password})
+    });
+    const d = await r.json();
+    if(d.ok){ window.location='/app'; return; }
+    showError(d.error || 'Login failed.');
+
+  } else {
+    const username = document.getElementById('username')?.value.trim();
+    const confirm  = document.getElementById('confirm')?.value;
+    if(!username||!email||!password||!confirm){ showError('Please fill in all fields.'); reset(); return; }
+    if(password !== confirm){ showError('Passwords do not match.'); reset(); return; }
+    const r = await fetch('/api/register',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, email, password})
+    });
+    const d = await r.json();
+    if(d.ok){ window.location='/app'; return; }
+    showError(d.error || 'Registration failed.');
+  }
+  reset();
+}
+
+function reset(){
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = false;
+  btn.innerHTML = MODE==='login' ? 'Sign In →' : 'Create Account →';
+}
+</script>
+</body>
+</html>
