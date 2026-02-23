@@ -902,89 +902,83 @@ function stopVoice() {
 
 // ── TTS — Sarvam bulbul:v3 via backend /api/tts
 let _ttsAudio = null;
+let _ttsLoading = false;
 
-async function speakHindi(text) {
+async function speakHindi(text, btnEl) {
   if (!text || !text.trim()) return;
+  if (_ttsLoading) return; // prevent double-tap
 
   // Stop anything currently playing
-  if (_ttsAudio) { try { _ttsAudio.pause(); } catch(e){} _ttsAudio = null; }
-  try { window.speechSynthesis?.cancel(); } catch(e) {}
+  if (_ttsAudio) {
+    try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e){}
+    _ttsAudio = null;
+  }
 
-  // Update button label
-  document.querySelectorAll('.speak-pill').forEach(b => b.textContent = '⏳ Loading…');
+  _ttsLoading = true;
+
+  // Update only the clicked button if provided, else all pills
+  const updateBtn = (label) => {
+    if (btnEl) { btnEl.textContent = label; return; }
+    document.querySelectorAll('.speak-pill, .wc-hear-btn').forEach(b => {
+      if (b.dataset.ttsActive) b.textContent = label;
+    });
+  };
+
+  // Mark active button
+  if (btnEl) btnEl.dataset.ttsActive = '1';
+  updateBtn('⏳ Loading…');
 
   try {
     const res = await fetch('/api/tts', {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ text: text.trim() })
+      body: JSON.stringify({ text: text.trim() })
     });
 
-    if (!res.ok) {
-      // Read error as text first — safer than .json() which can fail
-      const raw = await res.text();
-      let errMsg = `HTTP ${res.status}`;
-      let rawDetail = '';
-      try {
-        const parsed = JSON.parse(raw);
-        errMsg = parsed.error || errMsg;
-        rawDetail = parsed.raw || '';
-      } catch(e) { errMsg = raw.slice(0,300) || errMsg; }
-      resetSpeakBtns();
-      addMsg('tutor', `⚠️ TTS Error (${res.status}): ${errMsg}${rawDetail ? '\nRaw: ' + rawDetail : ''}\n\n👉 Check your server terminal for full error details.`, false);
-      return;
-    }
-
-    // Check content-type — should be audio (wav or mpeg)
     const ct = res.headers.get('content-type') || '';
-    if (!ct.includes('audio') && !ct.includes('mpeg') && !ct.includes('octet')) {
-      const raw = await res.text();
-      resetSpeakBtns();
-      addMsg('tutor', `⚠️ TTS returned non-audio response: ${raw.slice(0,200)}`, false);
+
+    if (!res.ok || !ct.includes('audio')) {
+      // Silent fail — just reset button, no chat spam
+      console.warn('[TTS] failed:', res.status, ct);
+      updateBtn('🔊 Hear');
+      _ttsLoading = false;
+      if (btnEl) delete btnEl.dataset.ttsActive;
       return;
     }
 
-    const blob  = await res.blob();
+    const blob = await res.blob();
     if (blob.size < 100) {
-      resetSpeakBtns();
-      addMsg('tutor', '⚠️ TTS returned empty audio. Check your Sarvam key in ⚙️ Settings.', false);
+      updateBtn('🔊 Hear');
+      _ttsLoading = false;
+      if (btnEl) delete btnEl.dataset.ttsActive;
       return;
     }
 
-    const url  = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
     _ttsAudio  = new Audio(url);
 
-    _ttsAudio.oncanplaythrough = () => {
-      _ttsAudio.play().catch(e => {
-        // Autoplay blocked — show a click-to-play button instead
-        resetSpeakBtns('▶ Click to play');
-        addMsg('tutor',
-          `<audio controls src="${url}" style="width:100%;margin-top:6px;border-radius:8px"></audio>`,
-          false);
-      });
-    };
+    _ttsAudio.onplay   = () => { updateBtn('🔊 Playing…'); _ttsLoading = false; };
+    _ttsAudio.onended  = () => { URL.revokeObjectURL(url); _ttsAudio = null; updateBtn('🔊 Hear'); if (btnEl) delete btnEl.dataset.ttsActive; };
+    _ttsAudio.onerror  = () => { URL.revokeObjectURL(url); _ttsAudio = null; updateBtn('🔊 Hear'); _ttsLoading = false; if (btnEl) delete btnEl.dataset.ttsActive; };
 
-    _ttsAudio.onplay  = () => resetSpeakBtns('🔊 Playing…');
-    _ttsAudio.onended = () => { URL.revokeObjectURL(url); _ttsAudio = null; resetSpeakBtns(); };
-    _ttsAudio.onerror = (e) => {
-      console.error('Audio playback error:', e);
-      resetSpeakBtns();
-      // Expose the audio element so user can manually play
-      addMsg('tutor',
-        `🔊 <audio controls src="${url}" style="width:100%;margin-top:4px;border-radius:8px"></audio>`,
-        false);
-    };
+    try {
+      await _ttsAudio.play();
+    } catch(e) {
+      // Autoplay blocked on some browsers — still okay
+      updateBtn('▶ Tap to play');
+      _ttsLoading = false;
+    }
 
-    _ttsAudio.load();
-
-  } catch(networkErr) {
-    resetSpeakBtns();
-    addMsg('tutor', `⚠️ Could not reach /api/tts: ${networkErr.message}`, false);
+  } catch(e) {
+    console.warn('[TTS] network error:', e.message);
+    updateBtn('🔊 Hear');
+    _ttsLoading = false;
+    if (btnEl) delete btnEl.dataset.ttsActive;
   }
 }
 
 function resetSpeakBtns(label) {
-  document.querySelectorAll('.speak-pill').forEach(b => b.textContent = label || '🔊 Hear pronunciation');
+  document.querySelectorAll('.speak-pill, .wc-hear-btn').forEach(b => b.textContent = label || '🔊 Hear');
 }
 
 
