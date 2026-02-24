@@ -274,6 +274,13 @@ def api_chat():
     if not msg: return jsonify(error="Empty message"), 400
     if not SARVAM_KEY: return jsonify(error="Service not configured. Please contact admin."), 503
 
+    # Check credits — 0 credits blocks chat too
+    uid = session["user_id"]
+    row = get_db().execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()
+    user_credits = row["credits"] if row and row["credits"] is not None else 100
+    if user_credits <= 0:
+        return jsonify(error="NO_CREDITS"), 402
+
     db = get_db(); uid = session["user_id"]; user = current_user()
     db.execute("INSERT INTO conversations (user_id,role,content) VALUES (?,?,?)", (uid,"user",msg))
     db.commit()
@@ -411,13 +418,11 @@ if __name__ == "__main__":
 # ──────────────────────────────────────────────
 #  CREDITS & STRIPE
 # ──────────────────────────────────────────────
-try:
-    import stripe
-    STRIPE_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
-    if STRIPE_KEY:
-        stripe.api_key = STRIPE_KEY
-except ImportError:
-    stripe = None
+import stripe
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY", "")
+if STRIPE_SECRET_KEY:
+    stripe.api_key = STRIPE_SECRET_KEY
 
 FREE_CREDITS   = 100    # credits given on signup
 CREDITS_PER_7  = 1000   # credits for $7 purchase
@@ -435,9 +440,15 @@ def init_credits():
 @app.route("/buy")
 @login_required
 def buy_page():
-    user = current_user()
-    stripe_pk = os.environ.get("STRIPE_PUBLIC_KEY", "")
-    return render_template("buy_credits.html", user=dict(user), stripe_pk=stripe_pk)
+    try:
+        user = current_user()
+        credits = user["credits"] if user["credits"] is not None else 100
+        u = dict(user)
+        u["credits"] = credits
+        return render_template("buy_credits.html", user=u, stripe_pk=STRIPE_PUBLIC_KEY)
+    except Exception as e:
+        print(f"[BUY PAGE ERROR] {e}")
+        return f"<h2>Error loading buy page: {e}</h2>", 500
 
 @app.route("/api/credits")
 @login_required
@@ -450,10 +461,8 @@ def api_credits():
 @app.route("/api/buy_credits", methods=["POST"])
 @login_required
 def api_buy_credits():
-    if not stripe:
-        return jsonify(error="Stripe not installed. Run: pip install stripe"), 503
-    if not STRIPE_KEY:
-        return jsonify(error="Stripe not configured on server."), 503
+    if not STRIPE_SECRET_KEY:
+        return jsonify(error="Stripe not configured on server. Set STRIPE_SECRET_KEY env var."), 503
 
     d = request.json or {}
     payment_method_id = d.get("payment_method_id")
@@ -494,7 +503,7 @@ def api_buy_credits():
         else:
             return jsonify(error=f"Payment status: {intent.status}"), 402
 
-    except stripe.error.CardError as e:
+    except stripe.CardError as e:
         return jsonify(error=str(e.user_message)), 402
     except Exception as e:
         return jsonify(error=str(e)), 500

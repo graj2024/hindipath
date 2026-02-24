@@ -863,6 +863,8 @@ async function sendMessage(override, lessonId) {
     if (d.error === 'SESSION_EXPIRED') {
       addMsg('tutor', '⚠️ Session expired. Refreshing page…', false);
       setTimeout(() => window.location.reload(), 1500);
+    } else if (d.error === 'NO_CREDITS') {
+      showNoCreditsOverlay();
     } else if (d.error) {
       addMsg('tutor', `⚠️ ${d.error}`, false);
     } else {
@@ -1172,6 +1174,34 @@ async function loadHistory() {
     d.history.forEach(m => addMsg(m.role==='assistant'?'tutor':'user', m.content, m.role==='assistant'));
     document.getElementById('chatArea').scrollTop = 99999;
   }
+}
+</script>
+<!-- No Credits Overlay -->
+<div id="noCreditsOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#1C2333;border:1px solid #30363D;border-radius:20px;padding:32px 28px;max-width:380px;width:100%;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">🪙</div>
+    <h2 style="font-family:Lora,serif;font-size:22px;margin-bottom:8px;color:#E6EDF3">Out of Credits</h2>
+    <p style="color:#8B949E;font-size:14px;margin-bottom:24px;line-height:1.6">
+      You've used all your free credits.<br>
+      Top up to keep learning Hindi with Gurujee!
+    </p>
+    <div style="background:#161B22;border-radius:14px;padding:16px;margin-bottom:20px">
+      <div style="font-size:28px;font-weight:700;color:#FF9933;font-family:Lora,serif">1,000 Credits</div>
+      <div style="font-size:13px;color:#8B949E;margin-top:4px">for just $7 — never expire</div>
+    </div>
+    <a href="/buy" style="display:block;background:linear-gradient(135deg,#FF9933,#FF6600);color:#000;font-weight:700;font-size:16px;padding:14px;border-radius:12px;text-decoration:none;margin-bottom:12px">
+      Buy Credits →
+    </a>
+    <button onclick="document.getElementById('noCreditsOverlay').style.display='none'" style="background:none;border:1px solid #30363D;color:#8B949E;padding:10px 20px;border-radius:10px;cursor:pointer;font-size:13px;width:100%">
+      Maybe Later
+    </button>
+  </div>
+</div>
+
+<script>
+function showNoCreditsOverlay() {
+  const el = document.getElementById('noCreditsOverlay');
+  el.style.display = 'flex';
 }
 </script>
 </body>
