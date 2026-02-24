@@ -94,6 +94,9 @@ def init_db():
         for col in ["onboarded INTEGER DEFAULT 0", "credits INTEGER DEFAULT 100"]:
             try: conn.execute(f"ALTER TABLE users ADD COLUMN {col}"); conn.commit()
             except: pass
+        # Fix existing users who have NULL credits — give them 100
+        conn.execute("UPDATE users SET credits=100 WHERE credits IS NULL")
+        conn.commit()
 
 # ── AUTH ────────────────────────────────────────
 def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
@@ -361,11 +364,15 @@ def api_tts():
     text = ((request.json or {}).get("text") or "").strip()[:500]
     if not text: return jsonify(error="No text"), 400
 
-    # Check and deduct credits
+    # Check and deduct credits — fail open so TTS always works on error
     uid = session["user_id"]
-    remaining = deduct_credit(uid)
-    if remaining == 0:
-        return jsonify(error="NO_CREDITS"), 402
+    try:
+        ok, remaining = deduct_credit(uid)
+        if not ok:
+            return jsonify(error="NO_CREDITS"), 402
+    except Exception as ce:
+        print(f"[CREDITS] error (allowing TTS): {ce}")
+        # Don't block TTS if credits check fails
 
     if SARVAM_KEY:
         try:
@@ -437,7 +444,7 @@ def buy_page():
 def api_credits():
     uid = session["user_id"]
     row = get_db().execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()
-    credits = row["credits"] if row else 0
+    credits = row["credits"] if row and row["credits"] is not None else 100
     return jsonify(credits=credits)
 
 @app.route("/api/buy_credits", methods=["POST"])
@@ -493,11 +500,24 @@ def api_buy_credits():
         return jsonify(error=str(e)), 500
 
 def deduct_credit(uid):
-    """Deduct 1 credit. Returns remaining credits or -1 if out of credits."""
+    """Deduct 1 credit. Returns (ok, remaining) tuple. NULL credits = 100 (legacy users)."""
     db = get_db()
     row = db.execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()
-    if not row or row["credits"] <= 0:
-        return 0
+    if not row:
+        return (True, 999)  # unknown user — allow
+
+    current = row["credits"]
+
+    # NULL = existing user before credits system — give them 100 free credits now
+    if current is None:
+        db.execute("UPDATE users SET credits=100 WHERE id=?", (uid,))
+        db.commit()
+        current = 100
+
+    if current <= 0:
+        return (False, 0)
+
     db.execute("UPDATE users SET credits = credits - 1 WHERE id=?", (uid,))
     db.commit()
-    return db.execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()["credits"]
+    remaining = db.execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()["credits"] or 0
+    return (True, remaining)
