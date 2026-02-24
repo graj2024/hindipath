@@ -822,16 +822,28 @@ async function sendMessage(override, lessonId) {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({message: text, lesson_id: lessonId || currentLessonId || ''})
     });
+
+    // Check if session expired — Flask returns HTML redirect
+    const ct = r.headers.get('content-type') || '';
+    if (r.status === 401 || !ct.includes('application/json')) {
+      removeTyping();
+      addMsg('tutor', '⚠️ Session expired. Refreshing page…', false);
+      setTimeout(() => window.location.reload(), 1500);
+      return;
+    }
+
     const d = await r.json();
     removeTyping();
-    if (d.error) {
+    if (d.error === 'SESSION_EXPIRED') {
+      addMsg('tutor', '⚠️ Session expired. Refreshing page…', false);
+      setTimeout(() => window.location.reload(), 1500);
+    } else if (d.error) {
       addMsg('tutor', `⚠️ ${d.error}`, false);
     } else {
       addMsg('tutor', d.reply, true);
-      // Show badge toasts for any newly earned badges
       if (d.new_badges && d.new_badges.length > 0) {
         d.new_badges.forEach((b, i) => setTimeout(() => showBadgeToast(b), i * 1800));
-        loadPathScreen(); // refresh path if open
+        loadPathScreen();
       }
     }
   } catch(e) {
@@ -926,6 +938,9 @@ async function speakHindi(text, btn) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text.trim() })
     });
+
+    // If session expired, Flask returns HTML — handle silently
+    if (r.status === 401) { done(); return; }
 
     const ct = res.headers.get('content-type') || '';
     if (!res.ok || !ct.includes('audio')) {

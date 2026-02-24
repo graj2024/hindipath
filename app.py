@@ -15,9 +15,21 @@ except ImportError:
     pass
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+
+# SECRET_KEY must be set in .env / Railway env vars
+# If not set, we use a fixed fallback (not secure, but won't break on restart)
+_secret = os.environ.get("SECRET_KEY")
+if not _secret:
+    # Derive from a fixed string so restarts don't invalidate sessions
+    import hashlib
+    _secret = hashlib.sha256(b"hindipath-fallback-key-change-me").hexdigest()
+app.secret_key = _secret
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"]   = False  # set True if HTTPS only
+app.config["PERMANENT_SESSION_LIFETIME"] = 86400 * 30  # 30 days
+
 DB_PATH    = os.path.join(os.path.dirname(__file__), "hindipath.db")
-SARVAM_KEY = os.environ.get("SARVAM_KEY", "sk_9fzeafdc_dpG4zApj9tSaXnocj9nD4we9")
+SARVAM_KEY = os.environ.get("SARVAM_KEY", "")
 SARVAM_CHAT= "https://api.sarvam.ai/v1/chat/completions"
 
 # ── DB ─────────────────────────────────────────
@@ -89,7 +101,11 @@ def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
 def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if "user_id" not in session: return redirect(url_for("login_page"))
+        if "user_id" not in session:
+            # Return JSON for API routes, redirect for page routes
+            if request.path.startswith("/api/"):
+                return jsonify(error="SESSION_EXPIRED", message="Your session expired. Please refresh the page."), 401
+            return redirect(url_for("login_page"))
         return f(*args, **kwargs)
     return wrapper
 
