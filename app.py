@@ -442,12 +442,26 @@ def init_credits():
 def buy_page():
     try:
         user = current_user()
-        credits = user["credits"] if user["credits"] is not None else 100
-        u = dict(user)
-        u["credits"] = credits
+        uid = session["user_id"]
+        # Get credits safely — column may not exist for old accounts
+        try:
+            credits = user["credits"]
+            if credits is None:
+                credits = 100
+                get_db().execute("UPDATE users SET credits=100 WHERE id=?", (uid,))
+                get_db().commit()
+        except (IndexError, KeyError):
+            credits = 100
+            try:
+                get_db().execute("ALTER TABLE users ADD COLUMN credits INTEGER DEFAULT 100")
+                get_db().commit()
+            except: pass
+            get_db().execute("UPDATE users SET credits=100 WHERE id=?", (uid,))
+            get_db().commit()
+        u = {"username": user["username"], "email": user["email"], "credits": credits}
         return render_template("buy_credits.html", user=u, stripe_pk=STRIPE_PUBLIC_KEY)
     except Exception as e:
-        print(f"[BUY PAGE ERROR] {e}")
+        import traceback; traceback.print_exc()
         return f"<h2>Error loading buy page: {e}</h2>", 500
 
 @app.route("/api/credits")
@@ -530,3 +544,13 @@ def deduct_credit(uid):
     db.commit()
     remaining = db.execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()["credits"] or 0
     return (True, remaining)
+
+@app.route("/api/admin/reset_credits", methods=["POST"])
+@login_required
+def reset_my_credits():
+    """Temporary: give current user 100 free credits. Remove after testing."""
+    uid = session["user_id"]
+    db = get_db()
+    db.execute("UPDATE users SET credits=100 WHERE id=?", (uid,))
+    db.commit()
+    return jsonify(ok=True, credits=100, message="100 free credits added!")

@@ -849,8 +849,16 @@ async function sendMessage(override, lessonId) {
       body: JSON.stringify({message: text, lesson_id: lessonId || currentLessonId || ''})
     });
 
-    // Check if session expired — Flask returns HTML redirect
     const ct = r.headers.get('content-type') || '';
+
+    // 402 = no credits (JSON response) — show overlay
+    if (r.status === 402) {
+      removeTyping();
+      showNoCreditsOverlay();
+      return;
+    }
+
+    // 401 or non-JSON = session expired — reload
     if (r.status === 401 || !ct.includes('application/json')) {
       removeTyping();
       addMsg('tutor', '⚠️ Session expired. Refreshing page…', false);
