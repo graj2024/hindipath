@@ -748,7 +748,7 @@ function formatBubble(text) {
         </div>
         <div class="wc-footer">
           <span class="wc-roman">${roman}</span>
-          <span class="wc-hear-btn" onclick="speakHindi(\`${safe}\`)">🔊 Hear</span>
+          <span class="wc-hear-btn" onclick="speakHindi(\`${safe}\`,this)">🔊 Hear</span>
         </div>
       </div>`;
       continue;
@@ -781,7 +781,7 @@ function addMsg(role, text, rich=false) {
         .map(line => line.split('|')[0].replace(/\[|\]/g,'').trim())
         .filter(w => w.length > 0);
       const hi = hiWords.join(' ');
-      if (hi) body += `<div><span class="speak-pill" onclick="speakHindi(\`${hi.replace(/`/g,'')}\`)">🔊 Hear pronunciation</span></div>`;
+      if (hi) body += `<div><span class="speak-pill" onclick="speakHindi(\`${hi.replace(/`/g,'')}\`,this)">🔊 Hear pronunciation</span></div>`;
     }
   } else {
     body = `<p>${text.replace(/\n/g,'<br>')}</p>`;
@@ -902,31 +902,23 @@ function stopVoice() {
 
 // ── TTS — Sarvam bulbul:v3 via backend /api/tts
 let _ttsAudio = null;
-let _ttsLoading = false;
 
-async function speakHindi(text, btnEl) {
+async function speakHindi(text, btn) {
   if (!text || !text.trim()) return;
-  if (_ttsLoading) return; // prevent double-tap
 
-  // Stop anything currently playing
+  // Stop any currently playing audio
   if (_ttsAudio) {
     try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e){}
     _ttsAudio = null;
   }
 
-  _ttsLoading = true;
+  // Show loading on clicked button
+  const origLabel = btn ? btn.textContent : null;
+  if (btn) btn.textContent = '⏳';
 
-  // Update only the clicked button if provided, else all pills
-  const updateBtn = (label) => {
-    if (btnEl) { btnEl.textContent = label; return; }
-    document.querySelectorAll('.speak-pill, .wc-hear-btn').forEach(b => {
-      if (b.dataset.ttsActive) b.textContent = label;
-    });
+  const done = (label) => {
+    if (btn) btn.textContent = label || origLabel || '🔊 Hear';
   };
-
-  // Mark active button
-  if (btnEl) btnEl.dataset.ttsActive = '1';
-  updateBtn('⏳ Loading…');
 
   try {
     const res = await fetch('/api/tts', {
@@ -936,44 +928,26 @@ async function speakHindi(text, btnEl) {
     });
 
     const ct = res.headers.get('content-type') || '';
-
     if (!res.ok || !ct.includes('audio')) {
-      // Silent fail — just reset button, no chat spam
       console.warn('[TTS] failed:', res.status, ct);
-      updateBtn('🔊 Hear');
-      _ttsLoading = false;
-      if (btnEl) delete btnEl.dataset.ttsActive;
-      return;
+      done(); return;
     }
 
     const blob = await res.blob();
-    if (blob.size < 100) {
-      updateBtn('🔊 Hear');
-      _ttsLoading = false;
-      if (btnEl) delete btnEl.dataset.ttsActive;
-      return;
-    }
+    if (blob.size < 100) { done(); return; }
 
     const url = URL.createObjectURL(blob);
-    _ttsAudio  = new Audio(url);
+    _ttsAudio = new Audio(url);
 
-    _ttsAudio.onplay   = () => { updateBtn('🔊 Playing…'); _ttsLoading = false; };
-    _ttsAudio.onended  = () => { URL.revokeObjectURL(url); _ttsAudio = null; updateBtn('🔊 Hear'); if (btnEl) delete btnEl.dataset.ttsActive; };
-    _ttsAudio.onerror  = () => { URL.revokeObjectURL(url); _ttsAudio = null; updateBtn('🔊 Hear'); _ttsLoading = false; if (btnEl) delete btnEl.dataset.ttsActive; };
+    _ttsAudio.onplay  = () => { if (btn) btn.textContent = '🔊 Playing…'; };
+    _ttsAudio.onended = () => { URL.revokeObjectURL(url); _ttsAudio = null; done(); };
+    _ttsAudio.onerror = () => { URL.revokeObjectURL(url); _ttsAudio = null; done(); };
 
-    try {
-      await _ttsAudio.play();
-    } catch(e) {
-      // Autoplay blocked on some browsers — still okay
-      updateBtn('▶ Tap to play');
-      _ttsLoading = false;
-    }
+    await _ttsAudio.play().catch(() => done('▶ Tap'));
 
   } catch(e) {
-    console.warn('[TTS] network error:', e.message);
-    updateBtn('🔊 Hear');
-    _ttsLoading = false;
-    if (btnEl) delete btnEl.dataset.ttsActive;
+    console.warn('[TTS] error:', e.message);
+    done();
   }
 }
 
