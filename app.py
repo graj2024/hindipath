@@ -91,7 +91,7 @@ def close_db(e=None):
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
         conn.executescript(SCHEMA)
-        for col in ["onboarded INTEGER DEFAULT 0"]:
+        for col in ["onboarded INTEGER DEFAULT 0", "credits INTEGER DEFAULT 100"]:
             try: conn.execute(f"ALTER TABLE users ADD COLUMN {col}"); conn.commit()
             except: pass
 
@@ -187,7 +187,8 @@ def api_register():
     if not re.match(r"[^@]+@[^@]+\.[^@]+", em): return jsonify(error="Invalid email"), 400
     db = get_db()
     try:
-        db.execute("INSERT INTO users (username,email,password_hash) VALUES (?,?,?)", (un,em,hash_pw(pw)))
+        db.execute("INSERT INTO users (username,email,password_hash,credits) VALUES (?,?,?,?)",
+                   (un,em,hash_pw(pw),FREE_CREDITS))
         db.commit()
         user = db.execute("SELECT * FROM users WHERE email=?", (em,)).fetchone()
         session["user_id"] = user["id"]
@@ -359,6 +360,13 @@ def api_complete_lesson():
 def api_tts():
     text = ((request.json or {}).get("text") or "").strip()[:500]
     if not text: return jsonify(error="No text"), 400
+
+    # Check and deduct credits
+    uid = session["user_id"]
+    remaining = deduct_credit(uid)
+    if remaining == 0:
+        return jsonify(error="NO_CREDITS"), 402
+
     if SARVAM_KEY:
         try:
             res = requests.post(
@@ -391,3 +399,105 @@ if __name__ == "__main__":
     print("\n🚀  HindiPath at http://localhost:5000\n")
     if not SARVAM_KEY: print("⚠️  SARVAM_KEY not set in .env — chat disabled\n")
     app.run(debug=True, port=5000)
+
+
+# ──────────────────────────────────────────────
+#  CREDITS & STRIPE
+# ──────────────────────────────────────────────
+try:
+    import stripe
+    STRIPE_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+    if STRIPE_KEY:
+        stripe.api_key = STRIPE_KEY
+except ImportError:
+    stripe = None
+
+FREE_CREDITS   = 100    # credits given on signup
+CREDITS_PER_7  = 1000   # credits for $7 purchase
+PRICE_CENTS    = 700    # $7.00 in cents
+
+def init_credits():
+    """Add credits column to users table if not exists."""
+    with sqlite3.connect(DB_PATH) as conn:
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN credits INTEGER DEFAULT 100")
+            conn.commit()
+        except Exception:
+            pass  # column already exists
+
+@app.route("/buy")
+@login_required
+def buy_page():
+    user = current_user()
+    stripe_pk = os.environ.get("STRIPE_PUBLIC_KEY", "")
+    return render_template("buy_credits.html", user=dict(user), stripe_pk=stripe_pk)
+
+@app.route("/api/credits")
+@login_required
+def api_credits():
+    uid = session["user_id"]
+    row = get_db().execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()
+    credits = row["credits"] if row else 0
+    return jsonify(credits=credits)
+
+@app.route("/api/buy_credits", methods=["POST"])
+@login_required
+def api_buy_credits():
+    if not stripe:
+        return jsonify(error="Stripe not installed. Run: pip install stripe"), 503
+    if not STRIPE_KEY:
+        return jsonify(error="Stripe not configured on server."), 503
+
+    d = request.json or {}
+    payment_method_id = d.get("payment_method_id")
+    if not payment_method_id:
+        return jsonify(error="Payment method required"), 400
+
+    uid = session["user_id"]
+    user = current_user()
+
+    try:
+        # Allow dynamic amounts from request (for multiple plan tiers)
+        amount_cents = int(d.get("amount_cents", PRICE_CENTS))
+        credits_to_add = int(d.get("credits", CREDITS_PER_7))
+        # Safety check — only allow known amounts
+        VALID_PLANS = {700: 1000, 1200: 2000}
+        if amount_cents not in VALID_PLANS:
+            return jsonify(error="Invalid plan selected"), 400
+        credits_to_add = VALID_PLANS[amount_cents]
+
+        intent = stripe.PaymentIntent.create(
+            amount=amount_cents,
+            currency="usd",
+            payment_method=payment_method_id,
+            confirm=True,
+            automatic_payment_methods={"enabled": True, "allow_redirects": "never"},
+            metadata={"user_id": str(uid), "username": user["username"]}
+        )
+
+        if intent.status == "succeeded":
+            db = get_db()
+            db.execute("UPDATE users SET credits = credits + ? WHERE id=?",
+                       (credits_to_add, uid))
+            db.commit()
+            new_credits = db.execute("SELECT credits FROM users WHERE id=?",
+                                     (uid,)).fetchone()["credits"]
+            return jsonify(ok=True, credits=new_credits,
+                           message=f"Payment successful! {credits_to_add} credits added.")
+        else:
+            return jsonify(error=f"Payment status: {intent.status}"), 402
+
+    except stripe.error.CardError as e:
+        return jsonify(error=str(e.user_message)), 402
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+def deduct_credit(uid):
+    """Deduct 1 credit. Returns remaining credits or -1 if out of credits."""
+    db = get_db()
+    row = db.execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()
+    if not row or row["credits"] <= 0:
+        return 0
+    db.execute("UPDATE users SET credits = credits - 1 WHERE id=?", (uid,))
+    db.commit()
+    return db.execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()["credits"]

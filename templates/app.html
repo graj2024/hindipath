@@ -49,8 +49,23 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);disp
   background:var(--card);border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;font-size:15px;color:var(--muted);transition:all .2s;
+  text-decoration:none;
 }
 .icon-btn:active{transform:scale(.93);background:var(--border)}
+.credit-chip{
+  display:flex;align-items:center;gap:5px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700;
+  color:var(--saffron);text-decoration:none;transition:all .2s;white-space:nowrap;
+}
+.credit-chip:hover{border-color:var(--saffron);background:rgba(255,153,51,.1)}
+.credit-chip.low{color:var(--red);border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.08)}
+.low-credits-bar{
+  background:rgba(248,81,73,.1);border-bottom:1px solid rgba(248,81,73,.25);
+  padding:8px 16px;font-size:12px;color:var(--red);text-align:center;
+}
+.low-credits-bar a{color:var(--saffron);font-weight:600;text-decoration:none}
+.low-credits-bar strong{color:var(--red)}
 
 /* ── TAB BAR ── */
 .tab-bar{
@@ -461,6 +476,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);disp
 <!-- ── TOP BAR ── -->
 <div class="topbar">
   <div class="logo-small"><span>हिं</span>HindiPath</div>
+  <a href="/buy" class="credit-chip" id="creditChip" title="Buy more credits">
+    🪙 <span id="creditCount">{{ user.credits or 0 }}</span>
+  </a>
   <div class="user-chip" onclick="openSettings()">
     <div class="av">{{ user.username[0].upper() }}</div>
     {{ user.username }}
@@ -468,6 +486,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);disp
   <div class="icon-btn" onclick="openSettings()" title="Settings">⚙️</div>
   <a href="/logout" class="icon-btn" title="Logout">🚪</a>
 </div>
+
+<!-- Low credits banner -->
+{% if (user.credits or 0) <= 10 %}
+<div class="low-credits-bar">
+  ⚠️ You have <strong>{{ user.credits or 0 }} credits</strong> left — 
+  <a href="/buy">Top up now to keep hearing pronunciation →</a>
+</div>
+{% endif %}
 
 <!-- ── TAB BAR ── -->
 <div class="tab-bar">
@@ -942,6 +968,14 @@ async function speakHindi(text, btn) {
       body: JSON.stringify({ text: text.trim() })
     });
 
+    // Handle no credits (402) — redirect to buy page
+    if (res.status === 402) {
+      done('🪙 No credits');
+      const go = confirm('You have run out of pronunciation credits!\n\nBuy 1,000 credits for $7 to continue hearing Hindi audio?');
+      if (go) window.location.href = '/buy';
+      return;
+    }
+
     if (!res.ok) { done(); return; }
 
     const ct = res.headers.get('content-type') || '';
@@ -959,7 +993,18 @@ async function speakHindi(text, btn) {
     _ttsSource = ctx.createBufferSource();
     _ttsSource.buffer = audioBuf;
     _ttsSource.connect(ctx.destination);
-    _ttsSource.onended = () => { _ttsSource = null; done(); };
+    _ttsSource.onended = () => {
+      _ttsSource = null; done();
+      // Refresh credit count silently
+      fetch('/api/credits').then(r=>r.json()).then(d=>{
+        const el = document.getElementById('creditCount');
+        if (el) {
+          el.textContent = d.credits;
+          const chip = document.getElementById('creditChip');
+          if (chip) chip.classList.toggle('low', d.credits <= 10);
+        }
+      }).catch(()=>{});
+    };
     _ttsSource.start(0);
 
   } catch(e) {

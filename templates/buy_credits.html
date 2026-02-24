@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HindiPath – Buy Credits</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&family=Lora:wght@700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+:root{
+  --bg:#0D1117;--surface:#161B22;--card:#1C2333;--border:#30363D;
+  --saffron:#FF9933;--saffron2:#FFB347;--green:#3FB950;--red:#F85149;
+  --blue:#58A6FF;--purple:#BC8CFF;--text:#E6EDF3;--muted:#8B949E;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;padding:20px;
+  background-image:
+    radial-gradient(ellipse at 20% 20%,rgba(255,153,51,.1) 0%,transparent 55%),
+    radial-gradient(ellipse at 80% 80%,rgba(63,185,80,.06) 0%,transparent 55%);
+}
+
+/* NAV */
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  max-width:900px;margin:0 auto 32px;padding:0 4px;
+}
+.nav-logo{
+  font-family:'Lora',serif;font-size:20px;font-weight:900;
+  background:linear-gradient(90deg,var(--saffron),var(--saffron2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-decoration:none;display:flex;align-items:center;gap:8px;
+}
+.nav-logo .hi{font-family:'Noto Sans Devanagari',sans-serif;-webkit-text-fill-color:var(--saffron)}
+.back-btn{
+  padding:8px 16px;border-radius:10px;border:1px solid var(--border);
+  background:none;color:var(--muted);font-family:'Outfit',sans-serif;
+  font-size:13px;cursor:pointer;text-decoration:none;transition:all .2s;
+}
+.back-btn:hover{border-color:var(--saffron);color:var(--saffron)}
+
+.wrap{max-width:900px;margin:0 auto}
+
+/* CREDIT BALANCE BANNER */
+.balance-banner{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:18px 22px;margin-bottom:28px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.bal-left{display:flex;align-items:center;gap:14px}
+.bal-icon{font-size:28px}
+.bal-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.bal-num{
+  font-family:'Lora',serif;font-size:28px;font-weight:700;
+  color:var(--saffron);line-height:1;
+}
+.bal-num.low{color:var(--red)}
+.bal-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* PLANS */
+h1{font-family:'Lora',serif;font-size:26px;font-weight:700;margin-bottom:6px}
+.page-sub{color:var(--muted);font-size:14px;margin-bottom:28px}
+
+.plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
+@media(max-width:600px){.plans-grid{grid-template-columns:1fr}}
+
+.plan-card{
+  background:var(--card);border:2px solid var(--border);
+  border-radius:20px;padding:24px 22px;
+  transition:border-color .2s,transform .15s;cursor:pointer;position:relative;
+}
+.plan-card:hover{border-color:rgba(255,153,51,.4);transform:translateY(-2px)}
+.plan-card.selected{border-color:var(--saffron);background:rgba(255,153,51,.04)}
+.plan-card.popular{border-color:rgba(255,153,51,.5)}
+
+.popular-tag{
+  position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,var(--saffron),#FF6600);
+  color:#000;font-size:10px;font-weight:700;letter-spacing:1px;
+  padding:4px 14px;border-radius:20px;text-transform:uppercase;white-space:nowrap;
+}
+.plan-price{
+  font-family:'Lora',serif;font-size:36px;font-weight:900;color:var(--saffron);
+  line-height:1;margin-bottom:4px;
+}
+.plan-price span{font-size:16px;font-weight:400;color:var(--muted)}
+.plan-credits{
+  font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px;
+}
+.plan-per{font-size:12px;color:var(--muted);margin-bottom:16px}
+.plan-features{list-style:none}
+.plan-features li{
+  font-size:13px;color:var(--muted);padding:4px 0;
+  display:flex;align-items:center;gap:8px;
+}
+.plan-features li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0}
+
+/* PAYMENT FORM */
+.pay-section{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:28px 24px;margin-bottom:24px;
+}
+.pay-section h2{font-size:17px;font-weight:700;margin-bottom:20px}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:500px){.form-row{grid-template-columns:1fr}}
+
+.form-group{margin-bottom:14px}
+label{display:block;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+.inp{
+  width:100%;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 14px;color:var(--text);
+  font-family:'Outfit',sans-serif;font-size:14px;outline:none;
+  transition:border-color .2s;
+}
+.inp:focus{border-color:rgba(255,153,51,.5)}
+.inp::placeholder{color:var(--muted)}
+
+/* Stripe element container */
+.stripe-field{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:13px 14px;transition:border-color .2s;
+}
+.stripe-field.focused{border-color:rgba(255,153,51,.5)}
+
+.error-box{
+  background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);
+  border-radius:10px;padding:10px 14px;font-size:13px;color:var(--red);
+  margin-bottom:14px;display:none;
+}
+.error-box.show{display:block}
+
+.success-box{
+  background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);
+  border-radius:10px;padding:14px 16px;font-size:14px;color:var(--green);
+  margin-bottom:14px;display:none;text-align:center;
+}
+.success-box.show{display:block}
+
+.pay-btn{
+  width:100%;padding:15px;border:none;border-radius:14px;
+  background:linear-gradient(135deg,var(--saffron),#FF6600);
+  color:#000;font-size:16px;font-weight:700;
+  font-family:'Outfit',sans-serif;cursor:pointer;
+  transition:transform .15s,opacity .2s;margin-top:4px;
+}
+.pay-btn:hover{opacity:.92;transform:translateY(-1px)}
+.pay-btn:active{transform:scale(.98)}
+.pay-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+.secure-note{
+  text-align:center;font-size:11px;color:var(--muted);
+  margin-top:12px;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+
+/* WHAT YOU GET */
+.what-section{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:20px 22px;margin-bottom:16px;
+}
+.what-section h3{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.what-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:500px){.what-grid{grid-template-columns:1fr}}
+.what-item{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:12px 14px;
+}
+.what-item .wi{font-size:20px;margin-bottom:6px}
+.what-item p{font-size:12px;color:var(--muted);line-height:1.5}
+.what-item strong{color:var(--text);display:block;font-size:13px;margin-bottom:2px}
+
+.spinner{
+  display:inline-block;width:16px;height:16px;
+  border:2px solid rgba(0,0,0,.3);border-top-color:#000;
+  border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <nav>
+    <a href="/app" class="nav-logo"><span class="hi">हिं</span>HindiPath</a>
+    <a href="/app" class="back-btn">← Back to Learning</a>
+  </nav>
+
+  <!-- Credit balance -->
+  <div class="balance-banner">
+    <div class="bal-left">
+      <div class="bal-icon">🪙</div>
+      <div>
+        <div class="bal-label">Your Credits</div>
+        <div class="bal-num {% if user.credits <= 10 %}low{% endif %}" id="creditDisplay">
+          {{ user.credits or 0 }}
+        </div>
+        <div class="bal-sub">1 credit = 1 pronunciation audio</div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--muted);text-align:right">
+      {% if (user.credits or 0) <= 10 %}
+        <span style="color:var(--red);font-weight:600">⚠️ Running low!</span><br>Top up to keep learning
+      {% else %}
+        Credits never expire 🎉
+      {% endif %}
+    </div>
+  </div>
+
+  <h1>Top Up Credits</h1>
+  <p class="page-sub">Chat with Gurujee is always free. Credits are only used for 🔊 pronunciation audio.</p>
+
+  <!-- Plan selection -->
+  <div class="plans-grid">
+    <div class="plan-card" onclick="selectPlan(this, 700, 1000)">
+      <div class="popular-tag">Most Popular</div>
+      <div class="plan-price">$7 <span>/one-time</span></div>
+      <div class="plan-credits">1,000 Credits</div>
+      <div class="plan-per">= 1,000 pronunciation plays</div>
+      <ul class="plan-features">
+        <li>Months of learning audio</li>
+        <li>Credits never expire</li>
+        <li>All Hindi voices included</li>
+        <li>Instant activation</li>
+      </ul>
+    </div>
+    <div class="plan-card" onclick="selectPlan(this, 1200, 2000)">
+      <div class="plan-price">$12 <span>/one-time</span></div>
+      <div class="plan-credits">2,000 Credits</div>
+      <div class="plan-per">= 2,000 pronunciation plays</div>
+      <ul class="plan-features">
+        <li>Best value — save 15%</li>
+        <li>Credits never expire</li>
+        <li>All Hindi voices included</li>
+        <li>Instant activation</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Payment form -->
+  <div class="pay-section">
+    <h2>💳 Payment Details</h2>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>First Name</label>
+        <input class="inp" type="text" id="firstName" placeholder="Rajesh">
+      </div>
+      <div class="form-group">
+        <label>Last Name</label>
+        <input class="inp" type="text" id="lastName" placeholder="Kumar">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Card Number</label>
+      <div class="stripe-field" id="cardNumber"></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Expiry Date</label>
+        <div class="stripe-field" id="cardExpiry"></div>
+      </div>
+      <div class="form-group">
+        <label>CVC</label>
+        <div class="stripe-field" id="cardCvc"></div>
+      </div>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+    <div class="success-box" id="successBox"></div>
+
+    <button class="pay-btn" id="payBtn" onclick="handlePayment()">
+      🔊 Buy 1,000 Credits — $7.00
+    </button>
+    <div class="secure-note">🔒 Secured by Stripe &nbsp;•&nbsp; No card data touches our servers</div>
+  </div>
+
+  <!-- What you get -->
+  <div class="what-section">
+    <h3>What credits get you</h3>
+    <div class="what-grid">
+      <div class="what-item">
+        <div class="wi">🔊</div>
+        <strong>Pronunciation Audio</strong>
+        <p>Hear every Hindi word spoken by a native-quality AI voice</p>
+      </div>
+      <div class="what-item">
+        <div class="wi">💬</div>
+        <strong>Chat is Always Free</strong>
+        <p>Talking with Gurujee never costs credits — unlimited chat</p>
+      </div>
+      <div class="what-item">
+        <div class="wi">♾️</div>
+        <strong>Never Expire</strong>
+        <p>Your credits roll over forever — use them at your own pace</p>
+      </div>
+      <div class="what-item">
+        <div class="wi">⚡</div>
+        <strong>Instant Activation</strong>
+        <p>Credits appear in your account the moment payment clears</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STRIPE_PK = "{{ stripe_pk }}";
+let stripe, cardNumber, cardExpiry, cardCvc;
+let selectedAmount = 700;
+let selectedCredits = 1000;
+
+// Init Stripe
+if (STRIPE_PK && STRIPE_PK !== 'None' && STRIPE_PK !== '') {
+  stripe = Stripe(STRIPE_PK);
+  const elements = stripe.elements({
+    appearance: {
+      theme: 'night',
+      variables: {
+        colorPrimary: '#FF9933',
+        colorBackground: '#1C2333',
+        colorText: '#E6EDF3',
+        colorDanger: '#F85149',
+        fontFamily: 'Outfit, sans-serif',
+        borderRadius: '10px',
+      }
+    }
+  });
+
+  cardNumber = elements.create('cardNumber');
+  cardExpiry = elements.create('cardExpiry');
+  cardCvc    = elements.create('cardCvc');
+
+  cardNumber.mount('#cardNumber');
+  cardExpiry.mount('#cardExpiry');
+  cardCvc.mount('#cardCvc');
+
+  [cardNumber, cardExpiry, cardCvc].forEach(el => {
+    el.on('focus', () => el._iframeElem?.closest('.stripe-field')?.classList.add('focused'));
+    el.on('blur',  () => el._iframeElem?.closest('.stripe-field')?.classList.remove('focused'));
+  });
+} else {
+  // No Stripe key configured
+  document.getElementById('payBtn').disabled = true;
+  document.getElementById('payBtn').textContent = '⚠️ Stripe not configured';
+  showError('Stripe public key not set. Add STRIPE_PUBLIC_KEY to your environment variables.');
+}
+
+// Select plan
+function selectPlan(card, amountCents, credits) {
+  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedAmount = amountCents;
+  selectedCredits = credits;
+  const dollars = (amountCents / 100).toFixed(2);
+  document.getElementById('payBtn').textContent =
+    `🔊 Buy ${credits.toLocaleString()} Credits — $${dollars}`;
+}
+
+// Auto-select first plan
+document.querySelector('.plan-card')?.click();
+
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = msg; el.classList.add('show');
+  document.getElementById('successBox').classList.remove('show');
+}
+function showSuccess(msg) {
+  const el = document.getElementById('successBox');
+  el.textContent = msg; el.classList.add('show');
+  document.getElementById('errorBox').classList.remove('show');
+}
+function clearMessages() {
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('successBox').classList.remove('show');
+}
+
+async function handlePayment() {
+  if (!stripe) return;
+  clearMessages();
+
+  const firstName = document.getElementById('firstName').value.trim();
+  const lastName  = document.getElementById('lastName').value.trim();
+  if (!firstName || !lastName) { showError('Please enter your first and last name.'); return; }
+
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Processing…';
+
+  try {
+    // Create payment method
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+      type: 'card',
+      card: cardNumber,
+      billing_details: { name: `${firstName} ${lastName}` }
+    });
+
+    if (error) { showError(error.message); reset(btn); return; }
+
+    // Send to backend
+    const r = await fetch('/api/buy_credits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        payment_method_id: paymentMethod.id,
+        first_name: firstName,
+        last_name: lastName,
+        amount_cents: selectedAmount,
+        credits: selectedCredits
+      })
+    });
+
+    const d = await r.json();
+    if (d.ok) {
+      showSuccess(`🎉 ${d.message}`);
+      document.getElementById('creditDisplay').textContent = d.credits;
+      document.getElementById('creditDisplay').classList.remove('low');
+      btn.textContent = '✅ Payment Successful!';
+      // Redirect back to app after 2 seconds
+      setTimeout(() => window.location.href = '/app', 2000);
+    } else {
+      showError(d.error || 'Payment failed. Please try again.');
+      reset(btn);
+    }
+  } catch(e) {
+    showError('Network error. Please try again.');
+    reset(btn);
+  }
+}
+
+function reset(btn) {
+  btn.disabled = false;
+  const dollars = (selectedAmount / 100).toFixed(2);
+  btn.textContent = `🔊 Buy ${selectedCredits.toLocaleString()} Credits — $${dollars}`;
+}
+</script>
+</body>
+</html>
