@@ -718,8 +718,14 @@ def api_admin_ban():
     get_db().commit()
     return jsonify(ok=True)
 
+# Run init_db at module load — works with both gunicorn and direct python
+with app.app_context():
+    try:
+        init_db()
+    except Exception as e:
+        print(f"[DB INIT] {e}")
+
 if __name__ == "__main__":
-    init_db()
     print("\n🚀  LanguagePaths at http://localhost:5000\n")
     if not SARVAM_KEY: print("⚠️  SARVAM_KEY not set\n")
     app.run(debug=True, port=5000)
