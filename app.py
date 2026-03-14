@@ -7,7 +7,10 @@ import os, json, sqlite3, re, hashlib, secrets, requests
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, g, Response
 import base64 as _b64
-import stripe
+try:
+    import stripe
+except ImportError:
+    stripe = None
 
 try:
     from dotenv import load_dotenv; load_dotenv()
@@ -29,7 +32,7 @@ STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY", "")
 ADMIN_PASSWORD    = os.environ.get("ADMIN_PASSWORD", "admin2026lp")
 
-if STRIPE_SECRET_KEY:
+if STRIPE_SECRET_KEY and stripe:
     stripe.api_key = STRIPE_SECRET_KEY
 
 FREE_CREDITS = 100
@@ -599,6 +602,8 @@ def api_credits():
 @app.route("/api/buy_credits", methods=["POST"])
 @login_required
 def api_buy_credits():
+    if not stripe:
+        return jsonify(error="Stripe not installed on server."), 503
     if not STRIPE_SECRET_KEY:
         return jsonify(error="Stripe not configured. Set STRIPE_SECRET_KEY env var."), 503
     d  = request.json or {}
