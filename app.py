@@ -407,6 +407,19 @@ def api_settings():
     return jsonify(ok=True)
 
 # ── CHAT API ────────────────────────────────────
+# ── Credit costs (update when Sarvam-M pricing announced) ──
+CREDITS_PER_CHAT        = 0   # FREE — sarvam-m is free as of 2026
+CREDITS_PER_Q_TRANSLATE = 2   # Q: mode deducts 2 credits (TTS included, 80% margin)
+
+def is_q_translate(msg):
+    """Match Q: "word" or Q: word formats."""
+    return bool(re.match(r'^[Qq]\s*:\s*.+', msg.strip()))
+
+def extract_q_text(msg):
+    """Extract the word/phrase from Q: format."""
+    m = re.match(r'^[Qq]\s*:\s*["\']?(.+?)["\']?\s*$', msg.strip())
+    return m.group(1).strip() if m else msg
+
 @app.route("/api/chat", methods=["POST"])
 @login_required
 def api_chat():
@@ -420,11 +433,24 @@ def api_chat():
     user = current_user()
     lang = user["target_lang"] or "hindi"
 
+    # Detect Q: translation mode — costs 2 credits (includes TTS)
+    q_mode = is_q_translate(msg)
+    credits_needed = CREDITS_PER_Q_TRANSLATE if q_mode else CREDITS_PER_CHAT
+
     # Credits check
     row = get_db().execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()
     user_credits = row["credits"] if row and row["credits"] is not None else 100
-    if user_credits <= 0:
+    if user_credits < max(credits_needed, 1) and credits_needed > 0:
         return jsonify(error="NO_CREDITS"), 402
+    if user_credits <= 0 and credits_needed > 0:
+        return jsonify(error="NO_CREDITS"), 402
+
+    # For Q: mode — build enhanced prompt for AI
+    if q_mode:
+        q_text = extract_q_text(msg)
+        ai_msg = f'Translate and teach: "{q_text}". Use the word card pipe format only.'
+    else:
+        ai_msg = msg
 
     db = get_db()
     db.execute("INSERT INTO conversations (user_id,role,content,lang) VALUES (?,?,?,?)", (uid,"user",msg,lang))
@@ -434,6 +460,9 @@ def api_chat():
         "SELECT role,content FROM conversations WHERE user_id=? AND lang=? ORDER BY id DESC LIMIT 20",
         (uid, lang)).fetchall()
     history = [{"role":r["role"],"content":r["content"]} for r in reversed(rows)]
+    # Use enhanced message for Q: mode
+    if q_mode and history:
+        history[-1]["content"] = ai_msg
 
     try:
         res = requests.post(SARVAM_CHAT,
@@ -464,8 +493,28 @@ def api_chat():
                 db.execute("INSERT INTO progress (user_id,lang,level,lesson_id,words_seen) VALUES (?,?,?,?,1)",
                            (uid,lang,user["teach_level"] or "beginner",lid))
             db.commit()
+        # Deduct credits AFTER successful reply (Q: mode = 2 credits)
+        if credits_needed > 0:
+            try:
+                db.execute("UPDATE users SET credits=credits-? WHERE id=?", (credits_needed, uid))
+                db.commit()
+            except Exception as ce:
+                print(f"[CREDITS] {ce}")
+
+        # Log token usage for future billing
+        usage = data.get("usage", {})
+        if usage:
+            print(f"[TOKENS] uid={uid} in={usage.get('prompt_tokens',0)} out={usage.get('completion_tokens',0)} q={q_mode}")
+
         new_badges = check_and_award(uid, lang)
-        return jsonify(reply=reply, new_badges=[{"id":b,**BADGES[b]} for b in new_badges if b in BADGES], lang=lang)
+        remaining = db.execute("SELECT credits FROM users WHERE id=?", (uid,)).fetchone()["credits"] or 0
+        return jsonify(
+            reply=reply,
+            new_badges=[{"id":b,**BADGES[b]} for b in new_badges if b in BADGES],
+            lang=lang, q_mode=q_mode,
+            credits_used=credits_needed,
+            credits_remaining=remaining
+        )
     except requests.exceptions.Timeout:
         return jsonify(error="Tutor is taking too long. Try again."), 504
     except Exception as e:
