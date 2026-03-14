@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LanguagePaths Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0F;--surface:#13131A;--card:#1A1A24;--border:rgba(255,255,255,.08);
+  --accent:#A78BFA;--text:#F0EEE8;--muted:#8A8899;
+  --green:#4ADE80;--red:#F87171;--yellow:#FBBF24;--blue:#60A5FA;
+  --hindi:#FF9933;--french:#4A90D9;--spanish:#E63946;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+/* Login */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:360px;text-align:center}
+.admin-logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;margin-bottom:6px}
+.admin-logo span{color:var(--accent)}
+.login-sub{color:var(--muted);font-size:13px;margin-bottom:28px}
+.inp{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:12px}
+.inp:focus{border-color:rgba(255,255,255,.2)}
+.inp::placeholder{color:var(--muted)}
+.login-btn{width:100%;padding:13px;background:var(--accent);color:#0A0A0F;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.login-btn:hover{opacity:.9;transform:translateY(-1px)}
+.err{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:10px;padding:10px;font-size:13px;color:var(--red);margin-bottom:12px;display:none}
+.err.show{display:block}
+
+/* Dashboard */
+.dash-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.dash-logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;display:flex;align-items:center;gap:8px}
+.dash-logo span{color:var(--accent)}
+.dash-badge{background:var(--accent);color:#0A0A0F;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.5px}
+.logout-btn{padding:7px 14px;border:1px solid var(--border);background:none;color:var(--muted);border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;transition:all .2s}
+.logout-btn:hover{color:var(--red);border-color:rgba(248,113,113,.3)}
+
+.dash-wrap{max-width:1200px;margin:0 auto;padding:24px 20px}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+@media(max-width:768px){.stats-grid{grid-template-columns:1fr 1fr}}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:50%;opacity:.1;transform:translate(15px,-15px)}
+.stat-card.purple::before{background:var(--accent)}
+.stat-card.green::before{background:var(--green)}
+.stat-card.yellow::before{background:var(--yellow)}
+.stat-card.blue::before{background:var(--blue)}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px}
+.stat-val{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;line-height:1}
+.stat-card.purple .stat-val{color:var(--accent)}
+.stat-card.green  .stat-val{color:var(--green)}
+.stat-card.yellow .stat-val{color:var(--yellow)}
+.stat-card.blue   .stat-val{color:var(--blue)}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:6px}
+
+/* Lang breakdown */
+.lang-breakdown{display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.lang-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px}
+.lang-flag{font-size:20px}
+.lang-count{font-size:16px;font-weight:700}
+.lang-name{font-size:12px;color:var(--muted)}
+
+/* Table */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.section-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700}
+.search-inp{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:220px}
+.search-inp:focus{border-color:rgba(255,255,255,.2)}
+.search-inp::placeholder{color:var(--muted)}
+
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:700px}
+th{padding:12px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600;background:var(--card);white-space:nowrap}
+td{padding:12px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+.badge-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-pill.hindi{background:rgba(255,153,51,.15);color:var(--hindi)}
+.badge-pill.french{background:rgba(74,144,217,.15);color:var(--french)}
+.badge-pill.spanish{background:rgba(230,57,70,.15);color:var(--spanish)}
+.badge-pill.green{background:rgba(74,222,128,.15);color:var(--green)}
+.badge-pill.red{background:rgba(248,113,113,.15);color:var(--red)}
+
+.action-btn{padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:none;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--muted);transition:all .2s;white-space:nowrap}
+.action-btn:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+.action-btn.danger:hover{color:var(--red);border-color:rgba(248,113,113,.3)}
+.action-btn.success:hover{color:var(--green);border-color:rgba(74,222,128,.3)}
+
+/* Credits modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-backdrop.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 24px;width:100%;max-width:340px}
+.modal h3{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;margin-bottom:16px}
+.modal-user{font-size:13px;color:var(--muted);margin-bottom:16px;padding:10px 12px;background:var(--card);border-radius:10px}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.modal-btn{padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;text-align:center}
+.modal-btn:hover{border-color:var(--accent);color:var(--accent)}
+.modal-custom{display:flex;gap:8px}
+.modal-custom input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none}
+.modal-custom input:focus{border-color:rgba(255,255,255,.2)}
+.modal-custom button{padding:10px 16px;background:var(--accent);color:#0A0A0F;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.modal-cancel{width:100%;padding:10px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:10px;cursor:pointer;margin-top:8px;font-family:'DM Sans',sans-serif;font-size:13px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#000;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:200}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+{% if view == 'login' %}
+<!-- ── LOGIN ── -->
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="admin-logo">Language<span>Paths</span></div>
+    <div class="login-sub">Admin Dashboard</div>
+    <div class="err" id="errBox"></div>
+    <input class="inp" type="password" id="adminPw" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Sign in →</button>
+  </div>
+</div>
+<script>
+async function doLogin() {
+  const pw = document.getElementById('adminPw').value;
+  const r  = await fetch('/admin/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+  const d  = await r.json();
+  if (d.ok) window.location.href='/admin/dashboard';
+  else { const el=document.getElementById('errBox'); el.textContent=d.error||'Wrong password'; el.classList.add('show'); }
+}
+</script>
+
+{% else %}
+<!-- ── DASHBOARD ── -->
+<div class="dash-nav">
+  <div class="dash-logo">Language<span>Paths</span> <div class="dash-badge">ADMIN</div></div>
+  <button class="logout-btn" onclick="window.location.href='/admin/logout'">Logout</button>
+</div>
+
+<div class="dash-wrap">
+
+  <!-- Stats -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card purple"><div class="stat-label">Total Users</div><div class="stat-val" id="sUsers">–</div></div>
+    <div class="stat-card green"><div class="stat-label">Active Today</div><div class="stat-val" id="sActive">–</div></div>
+    <div class="stat-card yellow"><div class="stat-label">Revenue</div><div class="stat-val" id="sRevenue">–</div><div class="stat-sub">Total USD</div></div>
+    <div class="stat-card blue"><div class="stat-label">Messages Sent</div><div class="stat-val" id="sMessages">–</div></div>
+  </div>
+
+  <!-- Language breakdown -->
+  <div class="lang-breakdown" id="langBreakdown"></div>
+
+  <!-- Users table -->
+  <div class="section-header">
+    <div class="section-title">Users</div>
+    <input class="search-inp" type="text" placeholder="🔍 Search users…" oninput="filterUsers(this.value)">
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Language</th>
+          <th>Level</th>
+          <th>Credits</th>
+          <th>Messages</th>
+          <th>Spent</th>
+          <th>Joined</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="usersTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Credits modal -->
+<div class="modal-backdrop" id="creditsModal">
+  <div class="modal">
+    <h3>🪙 Adjust Credits</h3>
+    <div class="modal-user" id="modalUser"></div>
+    <div class="modal-row">
+      <div class="modal-btn" onclick="addCredits(100)">+100</div>
+      <div class="modal-btn" onclick="addCredits(500)">+500</div>
+      <div class="modal-btn" onclick="addCredits(1000)">+1,000</div>
+      <div class="modal-btn" onclick="addCredits(-50)">−50</div>
+    </div>
+    <div class="modal-custom">
+      <input type="number" id="customAmt" placeholder="Custom amount…">
+      <button onclick="addCredits(parseInt(document.getElementById('customAmt').value)||0)">Add</button>
+    </div>
+    <button class="modal-cancel" onclick="document.getElementById('creditsModal').classList.remove('show')">Cancel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allUsers = [];
+let selectedUserId = null;
+let selectedUsername = '';
+
+async function loadStats() {
+  const r = await fetch('/api/admin/stats');
+  const d = await r.json();
+  document.getElementById('sUsers').textContent   = d.total_users;
+  document.getElementById('sActive').textContent  = d.active_today;
+  document.getElementById('sRevenue').textContent = '$' + (d.total_revenue_cents/100).toFixed(2);
+  document.getElementById('sMessages').textContent = d.total_messages.toLocaleString();
+
+  const FLAGS = {hindi:'🇮🇳',french:'🇫🇷',spanish:'🇪🇸'};
+  const NAMES = {hindi:'Hindi',french:'French',spanish:'Spanish'};
+  document.getElementById('langBreakdown').innerHTML = d.lang_breakdown.map(l =>
+    `<div class="lang-stat">
+      <div class="lang-flag">${FLAGS[l.lang]||'🌍'}</div>
+      <div><div class="lang-count">${l.cnt.toLocaleString()}</div><div class="lang-name">${NAMES[l.lang]||l.lang} messages</div></div>
+    </div>`
+  ).join('');
+}
+
+async function loadUsers() {
+  const r = await fetch('/api/admin/users');
+  const d = await r.json();
+  allUsers = d.users;
+  renderUsers(allUsers);
+}
+
+function renderUsers(users) {
+  const LANG_LABELS = {hindi:'🇮🇳 Hindi',french:'🇫🇷 French',spanish:'🇪🇸 Spanish'};
+  const LANG_CLASS  = {hindi:'hindi',french:'french',spanish:'spanish'};
+  document.getElementById('usersTable').innerHTML = users.map(u => `
+    <tr id="user-row-${u.id}">
+      <td>
+        <div style="font-weight:600">${u.username}</div>
+        <div style="font-size:11px;color:var(--muted)">${u.email}</div>
+      </td>
+      <td><span class="badge-pill ${LANG_CLASS[u.target_lang]||''}">${LANG_LABELS[u.target_lang]||u.target_lang}</span></td>
+      <td style="text-transform:capitalize;color:var(--muted);font-size:12px">${u.teach_level}</td>
+      <td>
+        <span style="font-weight:700;color:${(u.credits||0)<=10?'var(--red)':'var(--text)'}">${u.credits||0}</span>
+      </td>
+      <td style="color:var(--muted)">${u.msg_count||0}</td>
+      <td style="color:var(--green)">${u.total_spent_cents?'$'+(u.total_spent_cents/100).toFixed(2):'—'}</td>
+      <td style="color:var(--muted);font-size:12px">${(u.created_at||'').slice(0,10)}</td>
+      <td>
+        <span class="badge-pill ${u.is_banned?'red':'green'}">${u.is_banned?'Banned':'Active'}</span>
+      </td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="action-btn success" onclick="openCreditsModal(${u.id},'${u.username}')">🪙 Credits</button>
+        <button class="action-btn danger" onclick="toggleBan(${u.id},${u.is_banned?0:1},'${u.username}')">
+          ${u.is_banned?'✅ Unban':'🚫 Ban'}
+        </button>
+      </td>
+    </tr>`
+  ).join('');
+}
+
+function filterUsers(q) {
+  const lower = q.toLowerCase();
+  renderUsers(allUsers.filter(u =>
+    u.username.toLowerCase().includes(lower) ||
+    u.email.toLowerCase().includes(lower) ||
+    (u.target_lang||'').includes(lower)
+  ));
+}
+
+function openCreditsModal(uid, username) {
+  selectedUserId   = uid;
+  selectedUsername = username;
+  document.getElementById('modalUser').innerHTML =
+    `<strong>${username}</strong> · Current credits: <strong>${allUsers.find(u=>u.id===uid)?.credits||0}</strong>`;
+  document.getElementById('creditsModal').classList.add('show');
+  document.getElementById('customAmt').value = '';
+}
+
+async function addCredits(amount) {
+  if (!selectedUserId || amount === 0) return;
+  const r = await fetch('/api/admin/credits',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id:selectedUserId, amount})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    showToast(`✓ ${selectedUsername}: ${amount>0?'+':''}${amount} credits → ${d.credits} total`);
+    document.getElementById('creditsModal').classList.remove('show');
+    // Update allUsers local cache
+    const u = allUsers.find(u=>u.id===selectedUserId);
+    if (u) u.credits = d.credits;
+    renderUsers(allUsers);
+  }
+}
+
+async function toggleBan(uid, banned, username) {
+  const action = banned ? 'ban' : 'unban';
+  if (!confirm(`${action.charAt(0).toUpperCase()+action.slice(1)} ${username}?`)) return;
+  const r = await fetch('/api/admin/ban',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id:uid, banned})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    showToast(`✓ ${username} ${banned?'banned':'unbanned'}`);
+    const u = allUsers.find(u=>u.id===uid);
+    if (u) u.is_banned = banned;
+    renderUsers(allUsers);
+  }
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+// Close modal on backdrop click
+document.getElementById('creditsModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('creditsModal'))
+    document.getElementById('creditsModal').classList.remove('show');
+});
+
+// Init
+loadStats();
+loadUsers();
+setInterval(loadStats, 30000); // refresh stats every 30s
+</script>
+{% endif %}
+
+</body>
+</html>

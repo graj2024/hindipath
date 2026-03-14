@@ -314,7 +314,7 @@ let selectedAmount = 700;
 let selectedCredits = 1000;
 
 // Init Stripe
-if (STRIPE_PK && STRIPE_PK !== 'None' && STRIPE_PK !== '') {
+if (STRIPE_PK && STRIPE_PK !== 'None' && STRIPE_PK !== '' && STRIPE_PK.startsWith('pk_')) {
   stripe = Stripe(STRIPE_PK);
   const elements = stripe.elements({
     appearance: {

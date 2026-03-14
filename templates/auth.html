@@ -3,221 +3,164 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HindiPath – {% if mode=='login' %}Sign In{% else %}Create Account{% endif %}</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&family=Lora:wght@700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<title>{% if mode=='login' %}Sign in{% else %}Create account{% endif %} — LanguagePaths</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+:root{--bg:#0A0A0F;--card:#13131A;--border:rgba(255,255,255,.08);--hindi:#FF9933;--french:#4A90D9;--spanish:#E63946;--text:#F0EEE8;--muted:#8A8899}
 *{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0D1117;--surface:#161B22;--card:#1C2333;--border:#30363D;
-  --saffron:#FF9933;--green:#3FB950;--red:#F85149;--text:#E6EDF3;--muted:#8B949E;
-}
-body{
-  font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);
-  min-height:100vh;display:flex;align-items:center;justify-content:center;
-  padding:20px;
-  background-image:
-    radial-gradient(ellipse at 20% 30%,rgba(255,153,51,.12) 0%,transparent 55%),
-    radial-gradient(ellipse at 80% 70%,rgba(63,185,80,.07) 0%,transparent 55%);
-}
-.card{
-  width:100%;max-width:420px;
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:24px;padding:40px 36px;
-  box-shadow:0 20px 60px rgba(0,0,0,.5);
-}
-.logo{
-  text-align:center;margin-bottom:32px;
-}
-.logo .devanagari{
-  font-family:'Noto Sans Devanagari',sans-serif;
-  font-size:40px;color:var(--saffron);display:block;line-height:1;
-}
-.logo .brand{
-  font-family:'Lora',serif;font-size:24px;font-weight:900;
-  background:linear-gradient(135deg,var(--saffron),#FFB347);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin-top:4px;display:block;
-}
-.logo .tagline{font-size:12px;color:var(--muted);margin-top:6px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 30% 40%,rgba(255,153,51,.08),transparent 60%),radial-gradient(ellipse at 80% 70%,rgba(74,144,217,.08),transparent 60%)}
 
-.tabs{display:flex;background:var(--card);border-radius:12px;padding:4px;margin-bottom:28px}
-.tab{
-  flex:1;text-align:center;padding:10px;border-radius:9px;
-  font-size:14px;font-weight:600;cursor:pointer;
-  color:var(--muted);transition:all .2s;text-decoration:none;
-}
-.tab.active{background:var(--saffron);color:#000}
+.logo{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px;margin-bottom:40px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--hindi),var(--french),var(--spanish))}
 
-label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase}
-.input-group{margin-bottom:16px;position:relative}
-.input-group input{
-  width:100%;background:var(--card);border:1px solid var(--border);
-  border-radius:12px;padding:13px 16px;
-  color:var(--text);font-family:'Outfit',sans-serif;font-size:15px;
-  outline:none;transition:border-color .2s;
-}
-.input-group input:focus{border-color:var(--saffron)}
-.input-group input::placeholder{color:var(--muted)}
-.toggle-pw{
-  position:absolute;right:14px;top:50%;transform:translateY(-50%);
-  background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;
-}
+.card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:36px 32px}
+.card h1{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:6px}
+.card p{font-size:14px;color:var(--muted);margin-bottom:28px}
 
-.error-box{
-  background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);
-  border-radius:10px;padding:10px 14px;font-size:13px;color:var(--red);
-  margin-bottom:16px;display:none;
-}
+.form-group{margin-bottom:16px}
+label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+input,select{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s;-webkit-appearance:none}
+input:focus,select:focus{border-color:rgba(255,255,255,.25)}
+input::placeholder{color:var(--muted)}
+select option{background:#13131A}
+
+.lang-pills{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.lang-pill{padding:10px 8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:center;transition:all .2s;font-size:12px;color:var(--muted)}
+.lang-pill .flag{font-size:20px;display:block;margin-bottom:4px}
+.lang-pill.active.hindi{border-color:var(--hindi);background:rgba(255,153,51,.1);color:var(--hindi)}
+.lang-pill.active.french{border-color:var(--french);background:rgba(74,144,217,.1);color:var(--french)}
+.lang-pill.active.spanish{border-color:var(--spanish);background:rgba(230,57,70,.1);color:var(--spanish)}
+
+.error-box{background:rgba(230,57,70,.1);border:1px solid rgba(230,57,70,.3);border-radius:10px;padding:10px 14px;font-size:13px;color:#FF6B7A;margin-bottom:16px;display:none}
 .error-box.show{display:block}
 
-.submit-btn{
-  width:100%;padding:14px;border:none;border-radius:12px;
-  background:linear-gradient(135deg,var(--saffron),#FF6600);
-  color:#000;font-size:16px;font-weight:700;
-  font-family:'Outfit',sans-serif;cursor:pointer;
-  transition:transform .15s,opacity .2s;margin-top:4px;
-}
-.submit-btn:hover{opacity:.9}
-.submit-btn:active{transform:scale(.98)}
-.submit-btn:disabled{opacity:.5;cursor:not-allowed}
+.submit-btn{width:100%;padding:14px;background:var(--text);color:#0A0A0F;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;margin-top:4px}
+.submit-btn:hover{background:#F0EEE8;transform:translateY(-1px)}
+.submit-btn:disabled{opacity:.5;transform:none;cursor:not-allowed}
 
-.divider{
-  display:flex;align-items:center;gap:12px;
-  margin:20px 0;color:var(--muted);font-size:12px;
-}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
-
-.features{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px}
-.feature{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:10px;padding:10px 12px;
-  font-size:12px;color:var(--muted);
-}
-.feature .icon{font-size:18px;display:block;margin-bottom:4px}
-
-.spinner{
-  display:inline-block;width:16px;height:16px;
-  border:2px solid rgba(0,0,0,.3);border-top-color:#000;
-  border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
+.switch{text-align:center;margin-top:20px;font-size:13px;color:var(--muted)}
+.switch a{color:var(--text);text-decoration:none;font-weight:600}
+.switch a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
+
+<a href="/" class="logo"><div class="logo-dot"></div>LanguagePaths</a>
+
 <div class="card">
-  <div class="logo">
-    <span class="devanagari">हिंदी</span>
-    <span class="brand">HindiPath</span>
-    <div class="tagline">Learn Hindi • தமிழ் வழி • Through English</div>
-  </div>
+  {% if mode == 'login' %}
+  <h1>Welcome back</h1>
+  <p>Sign in to continue learning</p>
+  {% else %}
+  <h1>Start your path</h1>
+  <p>Free account · 100 credits included</p>
+  {% endif %}
 
-  <div class="tabs">
-    <a class="tab {% if mode=='login' %}active{% endif %}" href="/login">Sign In</a>
-    <a class="tab {% if mode=='register' %}active{% endif %}" href="/register">Register</a>
-  </div>
-
-  <div class="error-box" id="errorBox"></div>
+  <div class="error-box" id="errBox"></div>
 
   {% if mode == 'register' %}
-  <div class="input-group">
+  <div class="form-group">
+    <label>Choose your first language</label>
+    <div class="lang-pills">
+      <div class="lang-pill hindi active" onclick="selectLang('hindi',this)">
+        <span class="flag">🇮🇳</span>Hindi
+      </div>
+      <div class="lang-pill french" onclick="selectLang('french',this)">
+        <span class="flag">🇫🇷</span>French
+      </div>
+      <div class="lang-pill spanish" onclick="selectLang('spanish',this)">
+        <span class="flag">🇪🇸</span>Spanish
+      </div>
+    </div>
+    <input type="hidden" id="targetLang" value="hindi">
+  </div>
+  <div class="form-group">
     <label>Username</label>
-    <input type="text" id="username" placeholder="e.g. rajesh_learns" autocomplete="username">
+    <input type="text" id="username" placeholder="yourname">
   </div>
   {% endif %}
 
-  <div class="input-group">
+  <div class="form-group">
     <label>Email</label>
-    <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+    <input type="email" id="email" placeholder="you@example.com">
   </div>
-
-  <div class="input-group">
+  <div class="form-group">
     <label>Password</label>
-    <input type="password" id="password" placeholder="••••••••" autocomplete="{% if mode=='login' %}current-password{% else %}new-password{% endif %}" id="password">
-    <button class="toggle-pw" type="button" onclick="togglePw()">👁</button>
+    <input type="password" id="password" placeholder="••••••••">
   </div>
 
-  {% if mode == 'register' %}
-  <div class="input-group">
-    <label>Confirm Password</label>
-    <input type="password" id="confirm" placeholder="••••••••">
-  </div>
-  {% endif %}
-
-  <button class="submit-btn" id="submitBtn" onclick="submit()">
-    {% if mode=='login' %}Sign In →{% else %}Create Account →{% endif %}
+  <button class="submit-btn" id="submitBtn" onclick="handleSubmit()">
+    {% if mode=='login' %}Sign in{% else %}Create account →{% endif %}
   </button>
 
-  {% if mode == 'login' %}
-  <div class="divider">What you get</div>
-  <div class="features">
-    <div class="feature"><span class="icon">🧑‍🏫</span>AI Hindi Tutor powered by Sarvam AI</div>
-    <div class="feature"><span class="icon">🎯</span>Test yourself with pronunciation quizzes</div>
-    <div class="feature"><span class="icon">💾</span>Progress & history saved per user</div>
-    <div class="feature"><span class="icon">🗣️</span>Tamil + English + Hindi all-in-one</div>
+  <div class="switch">
+    {% if mode=='login' %}
+      Don't have an account? <a href="/register">Sign up free</a>
+    {% else %}
+      Already have an account? <a href="/login">Sign in</a>
+    {% endif %}
   </div>
-  {% endif %}
 </div>
 
 <script>
-const MODE = "{{ mode }}";
+let selectedLang = sessionStorage.getItem('preferred_lang') || 'hindi';
 
-function showError(msg){
-  const b = document.getElementById('errorBox');
-  b.textContent = msg; b.classList.add('show');
-}
-function clearError(){
-  document.getElementById('errorBox').classList.remove('show');
-}
-
-function togglePw(){
-  const inp = document.getElementById('password');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-
-document.querySelectorAll('input').forEach(inp => {
-  inp.addEventListener('keydown', e => { if(e.key==='Enter') submit(); });
+// Apply stored preference on load
+document.addEventListener('DOMContentLoaded', () => {
+  if (selectedLang !== 'hindi') {
+    const pill = document.querySelector(`.lang-pill.${selectedLang}`);
+    if (pill) {
+      document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const inp = document.getElementById('targetLang');
+      if (inp) inp.value = selectedLang;
+    }
+  }
 });
 
-async function submit(){
-  clearError();
+function selectLang(lang, el) {
+  selectedLang = lang;
+  document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('targetLang').value = lang;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errBox');
+  el.textContent = msg; el.classList.add('show');
+}
+
+async function handleSubmit() {
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Please wait…';
+  btn.textContent = '…';
+  document.getElementById('errBox').classList.remove('show');
 
-  const email    = document.getElementById('email')?.value.trim();
-  const password = document.getElementById('password')?.value;
+  const isLogin = {% if mode=='login' %}true{% else %}false{% endif %};
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
 
-  if(MODE === 'login'){
-    if(!email||!password){ showError('Please fill in all fields.'); reset(); return; }
-    const r = await fetch('/api/login',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({email, password})
+  if (!email || !password) { showError('Please fill in all fields.'); btn.disabled=false; btn.textContent=isLogin?'Sign in':'Create account →'; return; }
+
+  const body = isLogin
+    ? { email, password }
+    : { username: document.getElementById('username').value.trim(), email, password, target_lang: selectedLang };
+
+  try {
+    const r = await fetch(isLogin ? '/api/login' : '/api/register', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
     });
     const d = await r.json();
-    if(d.ok){ window.location='/app'; return; }
-    showError(d.error || 'Login failed.');
-
-  } else {
-    const username = document.getElementById('username')?.value.trim();
-    const confirm  = document.getElementById('confirm')?.value;
-    if(!username||!email||!password||!confirm){ showError('Please fill in all fields.'); reset(); return; }
-    if(password !== confirm){ showError('Passwords do not match.'); reset(); return; }
-    const r = await fetch('/api/register',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({username, email, password})
-    });
-    const d = await r.json();
-    if(d.ok){ window.location='/app'; return; }
-    showError(d.error || 'Registration failed.');
+    if (d.ok) { window.location.href = '/app'; }
+    else { showError(d.error || 'Something went wrong.'); btn.disabled=false; btn.textContent=isLogin?'Sign in':'Create account →'; }
+  } catch(e) {
+    showError('Network error. Please try again.');
+    btn.disabled=false; btn.textContent=isLogin?'Sign in':'Create account →';
   }
-  reset();
 }
 
-function reset(){
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = false;
-  btn.innerHTML = MODE==='login' ? 'Sign In →' : 'Create Account →';
-}
+document.addEventListener('keydown', e => { if(e.key==='Enter') handleSubmit(); });
 </script>
 </body>
 </html>
