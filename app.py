@@ -7,7 +7,13 @@ import os, re, hashlib, requests
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, g, Response
 import base64 as _b64
-import psycopg2, psycopg2.extras
+try:
+    import psycopg2, psycopg2.extras
+    HAS_PG = True
+except ImportError:
+    psycopg2 = None
+    HAS_PG = False
+    print("[WARNING] psycopg2 not installed. Run: pip install psycopg2-binary")
 
 try:
     import stripe
@@ -91,8 +97,10 @@ SCHEMA_STMTS = [
 
 def get_db():
     if "db" not in g:
+        if not HAS_PG:
+            raise RuntimeError("psycopg2 not installed — add psycopg2-binary to requirements.txt")
         if not DATABASE_URL:
-            raise RuntimeError("DATABASE_URL not set")
+            raise RuntimeError("DATABASE_URL not set — add your Supabase connection string to Railway env vars")
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
         conn.autocommit = False
         g.db = conn
@@ -178,21 +186,23 @@ CRITICAL FORMAT - every Hindi word on its own line:
 (pronunciation tip)
 Parts: Devanagari | Roman | English | Tamil. NO lists. NO bold. Max 3-5 words."""
     elif lang == "french":
-        return f"""You are Professeur, a warm French tutor for English speakers.
-Level: {level}. {ln}
-CRITICAL FORMAT - every French word on its own line:
+        return f"""You are Professeur, a warm French tutor for English speakers. Level: {level}. {ln}
+YOU MUST USE PIPE FORMAT FOR EVERY WORD. Example:
 bonjour | bohn-ZHOOR | Hello
-(pronunciation tip)
-Parts: French | Phonetic | English. NO lists. NO bold. Max 3-5 words.
-ALWAYS use this exact 3-part pipe format for every word you teach."""
+merci | mehr-SEE | Thank you
+Each word on its own line: French | Phonetic | English
+Next line: (pronunciation tip in parentheses)
+NEVER write word and meaning on separate lines without pipes.
+NEVER use numbered lists or bullet points. Max 4 words."""
     elif lang == "spanish":
-        return f"""You are Profesor, a warm Spanish tutor for English speakers.
-Level: {level}. {ln}
-CRITICAL FORMAT - every Spanish word on its own line:
+        return f"""You are Profesor, a warm Spanish tutor for English speakers. Level: {level}. {ln}
+YOU MUST USE PIPE FORMAT FOR EVERY WORD. Example:
 hola | OH-lah | Hello
-(pronunciation tip)
-Parts: Spanish | Phonetic | English. NO lists. NO bold. Max 3-5 words.
-ALWAYS use this exact 3-part pipe format for every word you teach."""
+gracias | GRAH-see-ahs | Thank you
+Each word on its own line: Spanish | Phonetic | English
+Next line: (pronunciation tip in parentheses)
+NEVER write word and meaning on separate lines without pipes.
+NEVER use numbered lists or bullet points. Max 4 words."""
     return ""
 
 def is_q(msg): return bool(re.match(r'^[Qq]\s*:\s*.+', msg.strip()))
@@ -208,6 +218,11 @@ def deduct_credit(uid, amount=1):
     q("UPDATE users SET credits=credits-%s WHERE id=%s", (amount, uid), commit=True)
     remaining = (q("SELECT credits FROM users WHERE id=%s", (uid,), one=True) or {}).get("credits", 0)
     return (True, remaining)
+
+@app.route("/health")
+def health():
+    """Railway health check — no DB needed."""
+    return "OK", 200
 
 @app.route("/")
 def index():
