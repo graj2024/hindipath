@@ -424,20 +424,26 @@ def api_chat():
     try:
         system_prompt = build_system_prompt(user)
         # Route: Hindi → Sarvam, French/Spanish → Claude (better format compliance)
-        if lang == "hindi" and SARVAM_KEY:
-            res = requests.post(SARVAM_CHAT,
+        def call_sarvam():
+            """Call Sarvam API, return (reply, error) tuple."""
+            r = requests.post(SARVAM_CHAT,
                 headers={"Content-Type":"application/json","api-subscription-key":SARVAM_KEY},
                 json={"model":"sarvam-m",
                       "messages":[{"role":"system","content":system_prompt},*history],
                       "temperature":0.7,"max_tokens":1000},timeout=30)
-            data = res.json()
-            if not res.ok:
-                detail = data.get("detail",{})
-                return jsonify(error=detail.get("msg",str(detail)) if isinstance(detail,dict) else str(detail)), res.status_code
-            reply = data["choices"][0]["message"]["content"]
-        elif CLAUDE_KEY:
-            # Use Claude for French/Spanish — much better at following pipe format
-            res = requests.post(CLAUDE_API_URL,
+            d = r.json()
+            if not r.ok:
+                detail = d.get("detail",{})
+                msg = detail.get("msg","") if isinstance(detail,dict) else str(detail)
+                return None, msg or f"Sarvam error {r.status_code}"
+            text = d.get("choices",[{}])[0].get("message",{}).get("content","").strip()
+            if not text:
+                return None, "Empty response from Sarvam"
+            return text, None
+
+        def call_claude():
+            """Call Claude API, return (reply, error) tuple."""
+            r = requests.post(CLAUDE_API_URL,
                 headers={"Content-Type":"application/json",
                          "x-api-key":CLAUDE_KEY,
                          "anthropic-version":"2023-06-01"},
@@ -447,23 +453,30 @@ def api_chat():
                       "max_tokens":1000,
                       "temperature":0.7},
                 timeout=30)
-            data = res.json()
-            if not res.ok:
-                err = data.get("error",{})
-                return jsonify(error=err.get("message","Claude API error")), res.status_code
-            reply = data["content"][0]["text"]
+            d = r.json()
+            if not r.ok:
+                return None, d.get("error",{}).get("message","Claude API error")
+            text = (d.get("content",[{}])[0].get("text","")).strip()
+            if not text:
+                return None, "Empty response from Claude"
+            return text, None
+
+        reply = None
+        if CLAUDE_KEY:
+            # Use Claude for all languages — reliable format compliance
+            reply, err = call_claude()
+            if not reply:
+                # Fall back to Sarvam if Claude fails
+                if SARVAM_KEY:
+                    print(f"[CHAT] Claude failed ({err}), falling back to Sarvam")
+                    reply, err = call_sarvam()
+                if not reply:
+                    return jsonify(error=err or "AI service unavailable"), 503
         elif SARVAM_KEY:
-            # Fallback to Sarvam if no Claude key
-            res = requests.post(SARVAM_CHAT,
-                headers={"Content-Type":"application/json","api-subscription-key":SARVAM_KEY},
-                json={"model":"sarvam-m",
-                      "messages":[{"role":"system","content":system_prompt},*history],
-                      "temperature":0.7,"max_tokens":1000},timeout=30)
-            data = res.json()
-            if not res.ok:
-                detail = data.get("detail",{})
-                return jsonify(error=detail.get("msg",str(detail)) if isinstance(detail,dict) else str(detail)), res.status_code
-            reply = data["choices"][0]["message"]["content"]
+            # No Claude key — use Sarvam
+            reply, err = call_sarvam()
+            if not reply:
+                return jsonify(error=err or "Sarvam unavailable"), 503
         else:
             return jsonify(error="No AI service configured."), 503
         q("INSERT INTO conversations (user_id,role,content,lang) VALUES (%s,%s,%s,%s)", (uid,"assistant",reply,lang), commit=True)
