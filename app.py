@@ -35,6 +35,9 @@ app.config["PERMANENT_SESSION_LIFETIME"] = 86400 * 30
 DATABASE_URL      = os.environ.get("DATABASE_URL", "")
 SARVAM_KEY        = os.environ.get("SARVAM_KEY", "")
 SARVAM_CHAT       = "https://api.sarvam.ai/v1/chat/completions"
+CLAUDE_KEY        = os.environ.get("CLAUDE_API_KEY", "")
+CLAUDE_API_URL    = "https://api.anthropic.com/v1/messages"
+CLAUDE_MODEL      = "claude-haiku-4-5-20251001"  # fast + cheap for language tutoring
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY", "")
 ADMIN_PASSWORD    = os.environ.get("ADMIN_PASSWORD", "admin2026lp")
@@ -318,15 +321,50 @@ def api_chat():
     history = [{"role":r["role"],"content":r["content"]} for r in reversed(rows)]
     if q_mode and history: history[-1]["content"] = ai_msg
     try:
-        res = requests.post(SARVAM_CHAT,
-            headers={"Content-Type":"application/json","api-subscription-key":SARVAM_KEY},
-            json={"model":"sarvam-m","messages":[{"role":"system","content":build_system_prompt(user)},*history],
-                  "temperature":0.7,"max_tokens":1000},timeout=30)
-        data = res.json()
-        if not res.ok:
-            detail = data.get("detail",{})
-            return jsonify(error=detail.get("msg",str(detail)) if isinstance(detail,dict) else str(detail)), res.status_code
-        reply = data["choices"][0]["message"]["content"]
+        system_prompt = build_system_prompt(user)
+        # Route: Hindi → Sarvam, French/Spanish → Claude (better format compliance)
+        if lang == "hindi" and SARVAM_KEY:
+            res = requests.post(SARVAM_CHAT,
+                headers={"Content-Type":"application/json","api-subscription-key":SARVAM_KEY},
+                json={"model":"sarvam-m",
+                      "messages":[{"role":"system","content":system_prompt},*history],
+                      "temperature":0.7,"max_tokens":1000},timeout=30)
+            data = res.json()
+            if not res.ok:
+                detail = data.get("detail",{})
+                return jsonify(error=detail.get("msg",str(detail)) if isinstance(detail,dict) else str(detail)), res.status_code
+            reply = data["choices"][0]["message"]["content"]
+        elif CLAUDE_KEY:
+            # Use Claude for French/Spanish — much better at following pipe format
+            res = requests.post(CLAUDE_API_URL,
+                headers={"Content-Type":"application/json",
+                         "x-api-key":CLAUDE_KEY,
+                         "anthropic-version":"2023-06-01"},
+                json={"model":CLAUDE_MODEL,
+                      "system":system_prompt,
+                      "messages":history,
+                      "max_tokens":1000,
+                      "temperature":0.7},
+                timeout=30)
+            data = res.json()
+            if not res.ok:
+                err = data.get("error",{})
+                return jsonify(error=err.get("message","Claude API error")), res.status_code
+            reply = data["content"][0]["text"]
+        elif SARVAM_KEY:
+            # Fallback to Sarvam if no Claude key
+            res = requests.post(SARVAM_CHAT,
+                headers={"Content-Type":"application/json","api-subscription-key":SARVAM_KEY},
+                json={"model":"sarvam-m",
+                      "messages":[{"role":"system","content":system_prompt},*history],
+                      "temperature":0.7,"max_tokens":1000},timeout=30)
+            data = res.json()
+            if not res.ok:
+                detail = data.get("detail",{})
+                return jsonify(error=detail.get("msg",str(detail)) if isinstance(detail,dict) else str(detail)), res.status_code
+            reply = data["choices"][0]["message"]["content"]
+        else:
+            return jsonify(error="No AI service configured."), 503
         q("INSERT INTO conversations (user_id,role,content,lang) VALUES (%s,%s,%s,%s)", (uid,"assistant",reply,lang), commit=True)
         pattern = r'[\u0900-\u097F]+' if lang=="hindi" else r'\b[a-zA-ZÀ-ÿ]{3,}\b'
         for w in re.findall(pattern, reply)[:10]:
