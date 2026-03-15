@@ -493,8 +493,7 @@ def api_chat():
         if credits_needed > 0:
             try: deduct_credit(uid, credits_needed)
             except: pass
-        usage = data.get("usage",{})
-        if usage: print(f"[TOKENS] uid={uid} lang={lang} in={usage.get('prompt_tokens',0)} out={usage.get('completion_tokens',0)} q={q_mode}")
+        # Token logging handled inside call functions
         new_badges = []
         try: new_badges = check_and_award(uid, lang)
         except: pass
