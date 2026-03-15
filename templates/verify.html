@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Email Verification — LanguagePaths</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:#0A0A0F;color:#F0EEE8;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  background-image:radial-gradient(ellipse at 30% 40%,rgba(255,153,51,.08),transparent 60%)}
+.card{background:#13131A;border:1px solid rgba(255,255,255,.08);border-radius:24px;
+  padding:48px 40px;max-width:420px;width:100%;text-align:center}
+.icon{font-size:56px;margin-bottom:20px}
+h1{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:10px}
+p{color:#8A8899;font-size:15px;line-height:1.6;margin-bottom:28px}
+.btn{display:inline-block;background:#FF9933;color:#000;font-weight:700;padding:14px 32px;
+  border-radius:12px;text-decoration:none;font-size:15px;transition:opacity .2s}
+.btn:hover{opacity:.9}
+.btn.ghost{background:none;border:1px solid rgba(255,255,255,.1);color:#8A8899;margin-top:10px;display:block}
+.btn.ghost:hover{color:#F0EEE8;border-color:rgba(255,255,255,.3)}
+.logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:#F0EEE8;
+  text-decoration:none;display:block;margin-bottom:32px}
+</style>
+</head>
+<body>
+<div style="width:100%;max-width:420px">
+  <a href="/" class="logo" style="text-align:center">LanguagePaths</a>
+
+  <div class="card">
+    {% if status == 'success' %}
+      <div class="icon">✅</div>
+      <h1>Email confirmed!</h1>
+      <p>Welcome, {{ username }}! Your account is fully verified. Start your language learning journey.</p>
+      <a href="/app" class="btn">Start Learning →</a>
+
+    {% elif status == 'already' %}
+      <div class="icon">👍</div>
+      <h1>Already verified</h1>
+      <p>Your email is already confirmed. Head to the app to keep learning.</p>
+      <a href="/app" class="btn">Go to App →</a>
+
+    {% else %}
+      <div class="icon">❌</div>
+      <h1>Invalid link</h1>
+      <p>This verification link is invalid or has expired. Sign in and request a new one.</p>
+      <a href="/login" class="btn">Sign in</a>
+      <a href="/register" class="btn ghost">Create new account</a>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% if status=='success' %}Email Confirmed{% else %}Confirmation Error{% endif %} — LanguagePaths</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:#0A0A0F;color:#F0EEE8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+background-image:radial-gradient(ellipse at 30% 40%,rgba(255,153,51,.08),transparent 60%),radial-gradient(ellipse at 80% 70%,rgba(74,144,217,.08),transparent 60%)}
+.card{background:#13131A;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:48px 40px;max-width:420px;width:100%;text-align:center}
+.icon{font-size:64px;margin-bottom:20px}
+h1{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:12px}
+p{color:#8A8899;font-size:15px;line-height:1.6;margin-bottom:28px}
+.btn{display:block;padding:14px 32px;border-radius:12px;font-weight:700;font-size:15px;text-decoration:none;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-primary{background:linear-gradient(135deg,#FF9933,#FF6600);color:#000}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.logo{font-family:'Playfair Display',serif;font-size:16px;font-weight:900;color:#8A8899;margin-bottom:32px;display:block;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <a href="/" class="logo">LanguagePaths</a>
+
+  {% if status == 'success' %}
+  <div class="icon">🎉</div>
+  <h1>Email confirmed!</h1>
+  <p>Welcome to LanguagePaths, <strong style="color:#F0EEE8">{{ username }}</strong>!<br>
+  Your account is fully activated. Start learning Hindi, French or Spanish with your personal AI tutor.</p>
+  <a href="/app" class="btn btn-primary">Start Learning →</a>
+
+  {% else %}
+  <div class="icon">⚠️</div>
+  <h1>Link not valid</h1>
+  <p>{{ msg }}<br><br>If you need a new confirmation link, sign in and click "Resend confirmation email".</p>
+  <a href="/login" class="btn btn-primary">Sign in →</a>
+  {% endif %}
+</div>
+</body>
+</html>

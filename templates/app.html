@@ -341,6 +341,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
   </div>
 </div>
 
+<!-- Email confirmation banner -->
+{% if not user.get('email_confirmed', 1) %}
+<div style="background:rgba(251,191,36,.08);border-bottom:1px solid rgba(251,191,36,.25);padding:8px 16px;font-size:12px;color:#FBBF24;text-align:center">
+  📧 Please confirm your email address.
+  <button onclick="resendConfirmation(this)" style="background:none;border:none;color:#FF9933;font-weight:700;cursor:pointer;font-size:12px;margin-left:8px;font-family:'DM Sans',sans-serif">Resend confirmation email</button>
+</div>
+{% endif %}
+
 <!-- Credits banners -->
 {% if (user.credits or 0) == 0 %}
 <div class="credits-banner zero">
@@ -351,6 +359,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 <div class="credits-banner">
   ⚠️ Only <strong>{{ user.credits or 0 }} credits</strong> left —
   <a href="/buy">Top up now →</a>
+</div>
+{% endif %}
+
+<!-- Email verification banner -->
+{% if not user.get('email_verified', 1) %}
+<div style="background:rgba(74,144,217,.1);border-bottom:1px solid rgba(74,144,217,.25);padding:8px 16px;font-size:12px;color:#60A5FA;text-align:center">
+  📧 Please verify your email —
+  <span onclick="resendVerification()" style="color:#FF9933;font-weight:600;cursor:pointer;text-decoration:underline">Resend confirmation email</span>
 </div>
 {% endif %}
 
@@ -1105,6 +1121,24 @@ function showBadgeToast(badge) {
 
 function showNoCredits() {
   document.getElementById('noCreditsOverlay').classList.add('show');
+}
+
+async function resendVerification() {
+  const r = await fetch('/api/resend-verification', {method:'POST'});
+  const d = await r.json();
+  if (d.ok) alert('Verification email sent! Check your inbox.');
+  else alert(d.error || d.message || 'Failed to send email.');
+}
+
+async function resendConfirmation(btn) {
+  btn.textContent = 'Sending…'; btn.disabled = true;
+  try {
+    const r = await fetch('/api/resend_confirmation', {method:'POST'});
+    const d = await r.json();
+    btn.textContent = d.ok ? '✅ Sent! Check your inbox' : '❌ Failed — try again';
+  } catch(e) {
+    btn.textContent = '❌ Network error'; btn.disabled = false;
+  }
 }
 </script>
 </body>

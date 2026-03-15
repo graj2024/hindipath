@@ -36,8 +36,25 @@ DATABASE_URL      = os.environ.get("DATABASE_URL", "")
 SARVAM_KEY        = os.environ.get("SARVAM_KEY", "")
 SARVAM_CHAT       = "https://api.sarvam.ai/v1/chat/completions"
 CLAUDE_KEY        = os.environ.get("CLAUDE_API_KEY", "")
+SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")  # e.g. https://xxx.supabase.co
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
+APP_URL           = os.environ.get("APP_URL", "https://your-app.railway.app")
+
+# Supabase Auth client (for email confirmation only)
+_supabase_client = None
+def get_supabase():
+    global _supabase_client
+    if _supabase_client is None and SUPABASE_URL and SUPABASE_ANON_KEY:
+        try:
+            from supabase import create_client
+            _supabase_client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+        except Exception as e:
+            print(f"[SUPABASE] init error: {e}")
+    return _supabase_client
 CLAUDE_API_URL    = "https://api.anthropic.com/v1/messages"
 CLAUDE_MODEL      = "claude-haiku-4-5-20251001"  # fast + cheap for language tutoring
+FROM_EMAIL        = os.environ.get("FROM_EMAIL", "noreply@languagepaths.com")
+APP_URL           = os.environ.get("APP_URL", "https://languagepaths.up.railway.app")
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY", "")
 ADMIN_PASSWORD    = os.environ.get("ADMIN_PASSWORD", "admin2026lp")
@@ -76,7 +93,8 @@ SCHEMA_STMTS = [
         password_hash TEXT NOT NULL, target_lang TEXT DEFAULT 'hindi',
         teach_level TEXT DEFAULT 'beginner', credits INTEGER DEFAULT 100,
         is_admin INTEGER DEFAULT 0, is_banned INTEGER DEFAULT 0,
-        onboarded INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW())""",
+        onboarded INTEGER DEFAULT 0, email_verified INTEGER DEFAULT 0,
+        verify_token TEXT, created_at TIMESTAMP DEFAULT NOW())""",
     """CREATE TABLE IF NOT EXISTS conversations (
         id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, role TEXT NOT NULL,
         content TEXT NOT NULL, lang TEXT DEFAULT 'hindi', created_at TIMESTAMP DEFAULT NOW())""",
@@ -138,7 +156,11 @@ def init_db():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS credits INTEGER DEFAULT 100",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token TEXT",
         "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS lang TEXT DEFAULT 'hindi'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_confirmed INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS confirm_token TEXT",
     ]:
         try: cur.execute(m)
         except: pass
@@ -150,6 +172,39 @@ def init_db():
     print("[DB] Supabase ready")
 
 def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
+
+import secrets as _secrets
+
+def send_verification_email(email, username, token):
+    """Send confirmation email via Resend."""
+    if not RESEND_API_KEY:
+        print(f"[EMAIL] RESEND_API_KEY not set — skipping email for {email}")
+        return False
+    verify_url = f"{APP_URL}/verify-email?token={token}"
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0A0A0F;color:#F0EEE8;border-radius:16px">
+      <h1 style="font-size:24px;margin-bottom:8px">Welcome to LanguagePaths! 🌍</h1>
+      <p style="color:#8A8899;margin-bottom:24px">Hi {username}, confirm your email to start learning.</p>
+      <a href="{verify_url}" style="display:inline-block;background:#FF9933;color:#000;font-weight:700;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:16px">
+        Confirm Email →
+      </a>
+      <p style="color:#8A8899;font-size:12px;margin-top:24px">Link expires in 24 hours. If you didn't sign up, ignore this email.</p>
+    </div>"""
+    try:
+        r = requests.post("https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            json={"from": FROM_EMAIL, "to": email,
+                  "subject": "Confirm your LanguagePaths account",
+                  "html": html},
+            timeout=10)
+        if r.ok:
+            print(f"[EMAIL] Sent to {email}")
+            return True
+        print(f"[EMAIL] Failed: {r.status_code} {r.text[:200]}")
+        return False
+    except Exception as e:
+        print(f"[EMAIL] Error: {e}")
+        return False
 
 def login_required(f):
     @wraps(f)
@@ -208,6 +263,8 @@ NEVER write word and meaning on separate lines without pipes.
 NEVER use numbered lists or bullet points. Max 4 words."""
     return ""
 
+import secrets as _secrets
+
 def is_q(msg): return bool(re.match(r'^[Qq]\s*:\s*.+', msg.strip()))
 def extract_q(msg):
     m = re.match(r'^[Qq]\s*:\s*["\']?(.+?)["\']?\s*$', msg.strip())
@@ -235,9 +292,35 @@ def index():
 @app.route("/app")
 @login_required
 def app_page():
-    user = current_user(); u = dict(user); u["credits"] = safe_credits(user)
+    user = current_user(); u = dict(user)
+    u["credits"] = safe_credits(user)
+    u["email_confirmed"] = u.get("email_confirmed", 0)
     return render_template("app.html", user=u, languages=LANGUAGES,
                            lang_config=LANGUAGES.get(u.get("target_lang","hindi"), LANGUAGES["hindi"]))
+
+@app.route("/verify-email")
+def verify_email():
+    token = request.args.get("token","")
+    if not token:
+        return render_template("verify.html", status="invalid")
+    user = q("SELECT id, username, email_verified FROM users WHERE verify_token=%s", (token,), one=True)
+    if not user:
+        return render_template("verify.html", status="invalid")
+    if user["email_verified"]:
+        return render_template("verify.html", status="already")
+    q("UPDATE users SET email_verified=1, verify_token=NULL WHERE id=%s", (user["id"],), commit=True)
+    return render_template("verify.html", status="success", username=user["username"])
+
+@app.route("/api/resend-verification", methods=["POST"])
+@login_required
+def api_resend_verification():
+    user = current_user()
+    if user.get("email_verified"):
+        return jsonify(error="Email already verified"), 400
+    token = _secrets.token_urlsafe(32)
+    q("UPDATE users SET verify_token=%s WHERE id=%s", (token, user["id"]), commit=True)
+    sent = send_verification_email(user["email"], user["username"], token)
+    return jsonify(ok=sent, message="Verification email sent!" if sent else "Failed to send email.")
 
 @app.route("/login")
 def login_page():
@@ -269,10 +352,28 @@ def api_register():
     if not re.match(r"[^@]+@[^@]+\.[^@]+", em): return jsonify(error="Invalid email"), 400
     if lng not in LANGUAGES: lng = "hindi"
     try:
-        user = q("INSERT INTO users (username,email,password_hash,target_lang,credits) VALUES (%s,%s,%s,%s,%s) RETURNING id",
-                 (un,em,hash_pw(pw),lng,FREE_CREDITS), one=True, commit=True)
+        # Create user in our DB first
+        user = q("INSERT INTO users (username,email,password_hash,target_lang,credits,email_confirmed) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id",
+                 (un,em,hash_pw(pw),lng,FREE_CREDITS,0), one=True, commit=True)
         session["user_id"] = user["id"]
-        return jsonify(ok=True)
+
+        # Register in Supabase Auth for email confirmation
+        sb = get_supabase()
+        if sb:
+            try:
+                sb.auth.sign_up({
+                    "email": em,
+                    "password": pw,
+                    "options": {
+                        "email_redirect_to": f"{APP_URL}/confirm",
+                        "data": {"username": un, "lp_user_id": str(user["id"])}
+                    }
+                })
+                print(f"[AUTH] Supabase signup sent confirmation to {em}")
+            except Exception as e:
+                print(f"[AUTH] Supabase signup error (non-fatal): {e}")
+
+        return jsonify(ok=True, email_sent=bool(sb))
     except psycopg2.errors.UniqueViolation:
         get_db().rollback(); return jsonify(error="Username or email already registered"), 409
     except Exception as e:
@@ -524,6 +625,59 @@ def check_and_award(uid, lang):
         try: q("INSERT INTO achievements (user_id,badge_id,lang) VALUES (%s,'trilingual','all')",(uid,),commit=True); new.append("trilingual")
         except: pass
     return new
+
+@app.route("/confirm")
+def confirm_email():
+    """Supabase redirects here after user clicks confirmation link."""
+    # Supabase adds token_hash and type params on redirect
+    token_hash = request.args.get("token_hash", "")
+    token      = request.args.get("token", "")
+    email      = request.args.get("email", "")
+    t_type     = request.args.get("type", "email")
+
+    # Try to verify via Supabase Auth
+    sb = get_supabase()
+    if sb and (token_hash or token):
+        try:
+            if token_hash:
+                sb.auth.verify_otp({"token_hash": token_hash, "type": t_type})
+            elif token and email:
+                sb.auth.verify_otp({"email": email, "token": token, "type": "email"})
+        except Exception as e:
+            print(f"[CONFIRM] Supabase verify error: {e}")
+
+    # Mark confirmed in our DB by email
+    if email:
+        user = q("SELECT * FROM users WHERE email=%s", (email.lower(),), one=True)
+        if user:
+            q("UPDATE users SET email_confirmed=1 WHERE id=%s", (user["id"],), commit=True)
+            return render_template("confirm.html", status="success", username=user["username"])
+        return render_template("confirm.html", status="error", msg="Account not found.")
+
+    # Fallback — mark by session if logged in
+    if "user_id" in session:
+        q("UPDATE users SET email_confirmed=1 WHERE id=%s", (session["user_id"],), commit=True)
+        user = current_user()
+        return render_template("confirm.html", status="success", username=user["username"] if user else "")
+
+    return render_template("confirm.html", status="error", msg="Could not verify — link may have expired.")
+
+@app.route("/api/resend_confirmation", methods=["POST"])
+@login_required
+def api_resend_confirmation():
+    uid  = session["user_id"]
+    user = current_user()
+    if user.get("email_confirmed"):
+        return jsonify(ok=True, msg="Already confirmed")
+    sb = get_supabase()
+    if sb:
+        try:
+            sb.auth.resend({"type":"signup","email":user["email"],
+                            "options":{"email_redirect_to":f"{APP_URL}/confirm"}})
+            return jsonify(ok=True, msg="Confirmation email resent")
+        except Exception as e:
+            return jsonify(ok=False, error=str(e)), 500
+    return jsonify(ok=False, error="Email service not configured"), 503
 
 @app.route("/admin")
 def admin_login():

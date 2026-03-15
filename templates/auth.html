@@ -152,7 +152,26 @@ async function handleSubmit() {
       method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
     });
     const d = await r.json();
-    if (d.ok) { window.location.href = '/app'; }
+    if (d.ok) {
+      if (!isLogin && d.email_sent) {
+        // Show email confirmation notice instead of redirecting immediately
+        document.querySelector('.card').innerHTML = `
+          <div style="text-align:center;padding:16px 0">
+            <div style="font-size:52px;margin-bottom:16px">📧</div>
+            <h1 style="font-family:'Playfair Display',serif;font-size:26px;margin-bottom:10px">Check your email!</h1>
+            <p style="color:#8A8899;font-size:14px;line-height:1.6;margin-bottom:24px">
+              We sent a confirmation link to <strong style="color:#F0EEE8">${document.getElementById('email').value}</strong>.<br>
+              Click the link to verify your account.
+            </p>
+            <a href="/app" style="display:block;background:#FF9933;color:#000;font-weight:700;padding:14px;border-radius:12px;text-decoration:none;font-size:15px;margin-bottom:10px">
+              Continue to App →
+            </a>
+            <p style="font-size:11px;color:#8A8899">You can also verify later — all features work immediately.</p>
+          </div>`;
+      } else {
+        window.location.href = '/app';
+      }
+    }
     else { showError(d.error || 'Something went wrong.'); btn.disabled=false; btn.textContent=isLogin?'Sign in':'Create account →'; }
   } catch(e) {
     showError('Network error. Please try again.');
