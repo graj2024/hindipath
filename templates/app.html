@@ -115,6 +115,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 .chat-area{flex:1;overflow-y:auto;padding:16px;scroll-behavior:smooth}
 .chat-area::-webkit-scrollbar{width:4px}
 .chat-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.chat-area{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.bubble{word-break:break-word;overflow-wrap:break-word}
+.word-card{overflow:hidden;max-width:100%}
 
 .msg{display:flex;gap:8px;margin-bottom:16px;animation:fadeIn .25s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -137,6 +140,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
   border-radius:14px;margin:8px 0;overflow:hidden;
 }
 .wc-header{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)}
+.wc-header.two-col{grid-template-columns:1fr 1fr}
 .wc-cell{background:var(--card);padding:10px 12px}
 .wc-lang{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-weight:600}
 .wc-word{font-size:15px;font-weight:700}
@@ -366,9 +370,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
   <div class="screen active" id="screen-tutor">
     <div class="tutor-header">
       <div class="tutor-info">
-        <div class="tutor-av">{{ lang_config.tutor_emoji }}</div>
+        <div class="tutor-av" id="tutorAv">{{ lang_config.tutor_emoji }}</div>
         <div>
-          <div class="tutor-name">{{ lang_config.tutor_name }}</div>
+          <div class="tutor-name" id="tutorName">{{ lang_config.tutor_name }}</div>
           <div class="tutor-status" id="tutorStatus">● Online · Ready to teach</div>
         </div>
       </div>
@@ -378,9 +382,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
     <div class="chat-area" id="chatArea"></div>
     <div class="input-bar">
       <textarea class="chat-inp" id="chatInp"
-        placeholder="{{ 'Ask in Tamil or English…' if user.target_lang == 'hindi' else 'Ask in English…' }}"
+        placeholder="{{ 'Ask anything, or Q: &quot;word&quot; to translate' if user.target_lang == 'hindi' else 'Ask anything, or Q: &quot;word&quot; to translate' }}"
         onkeydown="handleKey(event)" oninput="autoResize(this)" rows="1"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+    </div>
+    <div style="padding:4px 14px 8px;font-size:10px;color:var(--muted);text-align:center">
+      💡 Tip: Type <strong style="color:var(--accent)">Q: "word or phrase"</strong> to get instant translation + audio (2 credits)
     </div>
   </div>
 
@@ -620,9 +627,26 @@ const LANG_COLORS = {hindi:'--hindi',french:'--french',spanish:'--spanish'};
 // ── INIT ─────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   renderQuickTopics();
-  showWelcome();
+  loadChatHistory();
   if (CURRENT_USER.credits <= 0) disableChatInput();
 });
+
+async function loadChatHistory() {
+  try {
+    const r = await fetch(`/api/chat/history?lang=${currentLang}`);
+    if (!r.ok) { showWelcome(); return; }
+    const d = await r.json();
+    if (!d.history || d.history.length === 0) {
+      showWelcome(); return;
+    }
+    // Render existing messages
+    d.history.forEach(msg => {
+      addMsg(msg.role === 'user' ? 'user' : 'tutor', msg.content, msg.role !== 'user');
+    });
+  } catch(e) {
+    showWelcome();
+  }
+}
 
 function disableChatInput() {
   const inp = document.getElementById('chatInp');
@@ -649,13 +673,22 @@ async function switchLanguage(lang) {
   const color = ALL_LANGUAGES[lang].color;
   document.documentElement.style.setProperty('--accent', color);
   document.documentElement.style.setProperty('--accent-dim', color + '22');
+  // Update tutor name and emoji
+  const lc = ALL_LANGUAGES[lang];
+  const tutorAv = document.getElementById('tutorAv');
+  const tutorName = document.getElementById('tutorName');
+  if (tutorAv) tutorAv.textContent = lc.tutor_emoji;
+  if (tutorName) tutorName.textContent = lc.tutor_name;
+  // Update input placeholder
+  const inp = document.getElementById('chatInp');
+  if (inp) inp.placeholder = lang === 'hindi' ? 'Ask in Tamil or English, or Q: "word"' : 'Ask in English, or Q: "word" to translate';
   // Save setting
   await fetch('/api/settings', {method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({target_lang:lang})});
   // Reload chat for this language
   document.getElementById('chatArea').innerHTML = '';
   renderQuickTopics();
-  showWelcome();
+  loadChatHistory();
 }
 
 function changeLang(lang, el) {
@@ -720,60 +753,81 @@ function removeTyping() { document.getElementById('typing')?.remove(); }
 
 function formatBubble(text, lang) {
   let html = '';
-  const lines = text.split('\n');
   const isHindi = lang === 'hindi';
+  const rawLines = text.split('\n');
+
+  // Pre-process French/Spanish: merge multi-line word patterns into pipe format
+  // AI often returns: "bonjour\nbohn-ZHOOR\nHello" instead of "bonjour | bohn-ZHOOR | Hello"
+  let lines = rawLines;
+  if (!isHindi) {
+    const merged = [];
+    let i = 0;
+    while (i < rawLines.length) {
+      const a = (rawLines[i]||'').trim();
+      const b = (rawLines[i+1]||'').trim();
+      const c = (rawLines[i+2]||'').trim();
+      if (!a) { merged.push(''); i++; continue; }
+      const noPipes = !a.includes('|') && !b.includes('|');
+      const shortLines = a.length < 60 && b.length > 0 && b.length < 60;
+      const looksPhonetic = b.length > 0 && (/[A-Z]{2,}/.test(b) || /-[a-zA-Z]/.test(b));
+      if (noPipes && shortLines && looksPhonetic && c.length > 0 && c.length < 80 && !b.startsWith('(')) {
+        merged.push(`${a} | ${b} | ${c}`); i += 3;
+      } else if (noPipes && shortLines && b.length > 0 && c.length > 0 && c.length < 60 && !b.startsWith('(') && !a.includes('.')) {
+        merged.push(`${a} | ${b} | ${c}`); i += 3;
+      } else {
+        merged.push(a); i++;
+      }
+    }
+    lines = merged;
+  }
+
   for (const line of lines) {
     const t = line.trim();
     if (!t) { html += '<br>'; continue; }
-    // Word card: has 2+ pipes and (for Hindi) Devanagari; (for FR/ES) Roman chars
+    const pipeCount = (t.match(/\|/g)||[]).length;
     const hasDevanagari = /[\u0900-\u097F]/.test(t);
-    const hasPipes = (t.match(/\|/g)||[]).length >= 2;
-    if (hasPipes && (hasDevanagari || (!isHindi && hasPipes))) {
-      const clean = t.replace(/^[\s\d\-\.\*]+/,'').trim();
-      const p = clean.split('|').map(x=>x.trim());
+    const isWordCard = pipeCount >= 1 && (
+      (isHindi && hasDevanagari) ||
+      (!isHindi && pipeCount >= 1 && t.length < 200 && !t.includes('<'))
+    );
+    if (isWordCard) {
+      const clean = t.replace(/^[\s\d\-\.\*•]+/,'').trim();
+      const p = clean.split('|').map(x => x.replace(/[*_`]/g,'').trim());
       let targetWord, roman, english, extra;
       if (isHindi) {
         targetWord = p.find(x => /[\u0900-\u097F]/.test(x)) || p[0];
-        const idx  = p.indexOf(targetWord);
-        roman      = p[idx+1] || p[1] || '';
-        english    = p[idx+2] || p[2] || '';
-        extra      = p[idx+3] || p[3] || '';
+        const idx = p.indexOf(targetWord);
+        roman = p[idx+1]||''; english = p[idx+2]||''; extra = p[idx+3]||'';
       } else {
-        targetWord = p[0]; roman = p[1] || ''; english = p[2] || ''; extra = '';
+        targetWord = p[0]||''; roman = p[1]||''; english = p[2]||p[1]||'';
+        if (p.length === 2) { roman = ''; english = p[1]; }
       }
-      const safe = targetWord.replace(/`/g,'');
-      const targetClass = `target-${lang}`;
-      html += `<div class="word-card">
-        <div class="wc-header">
-          <div class="wc-cell"><div class="wc-lang">${ALL_LANGUAGES[lang]?.name||lang}</div><div class="wc-word ${targetClass}">${targetWord}</div></div>
-          <div class="wc-cell"><div class="wc-lang">English</div><div class="wc-word english">${english||roman}</div></div>
-          ${isHindi && extra ? `<div class="wc-cell"><div class="wc-lang">Tamil</div><div class="wc-word tamil">${extra}</div></div>` : ''}
-        </div>
-        <div class="wc-footer">
-          <span class="wc-roman">${roman}</span>
-          <span class="wc-hear-btn" onclick="speakWord(\`${safe}\`,\`${lang}\`,this)">🔊 Hear</span>
-        </div>
-      </div>`;
+      if (!targetWord) { html += `<p>${t}</p>`; continue; }
+      const safe = targetWord.replace(/`/g,"'");
+      const showTamil = isHindi && extra;
+      const colClass = showTamil ? '' : 'two-col';
+      html += `<div class="word-card"><div class="wc-header ${colClass}">` +
+        `<div class="wc-cell"><div class="wc-lang">${ALL_LANGUAGES[lang]?.name||lang}</div>` +
+        `<div class="wc-word target-${lang}">${targetWord}</div></div>` +
+        `<div class="wc-cell"><div class="wc-lang">English</div>` +
+        `<div class="wc-word english">${english||roman}</div></div>` +
+        (showTamil ? `<div class="wc-cell"><div class="wc-lang">Tamil</div><div class="wc-word tamil">${extra}</div></div>` : '') +
+        `</div><div class="wc-footer"><span class="wc-roman">${roman}</span>` +
+        `<span class="wc-hear-btn" onclick="speakWord(\`${safe}\`,\`${lang}\`,this)">🔊 Hear</span></div></div>`;
       continue;
     }
-    if (t.startsWith('(') && t.endsWith(')')) {
-      html += `<div class="tip-box">${t.slice(1,-1)}</div>`; continue;
-    }
-    if (/shabash|शाबाश|très bien|muy bien|correct|well done/i.test(t)) {
-      html += `<p><span class="correct">✅ ${t}</span></p>`; continue;
-    }
-    // Extract first target-lang word for Hear pronunciation button
+    if (t.startsWith('(') && t.endsWith(')')) { html += `<div class="tip-box">${t.slice(1,-1)}</div>`; continue; }
+    if (/shabash|शाबाश|très bien|muy bien|correct|well done/i.test(t)) { html += `<p><span class="correct">✅ ${t}</span></p>`; continue; }
     const devaWords = isHindi ? [...t.matchAll(/[\u0900-\u097F]+/g)].map(m=>m[0]) : [];
-    const f = t.replace(/\*\*(.*?)\*\*/g,'<strong class="highlight">$1</strong>');
+    const f = t.replace(/\*\*(.*?)\*\*/g,'<strong class="highlight">$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
     html += `<p>${f}</p>`;
     if (devaWords.length > 0) {
       const hw = devaWords.join(' ');
-      html += `<span class="speak-pill" onclick="speakWord(\`${hw.replace(/`/g,'')}\`,\`hindi\`,this)">🔊 Hear pronunciation</span>`;
+      html += `<span class="speak-pill" onclick="speakWord(\`${hw.replace(/`/g,"'")}\`,\`hindi\`,this)">🔊 Hear pronunciation</span>`;
     }
   }
-  return html;
+  return html || `<p>${text}</p>`;
 }
-
 function showWelcome() {
   const credits = parseInt(document.getElementById('creditCount')?.textContent || '99');
   if (credits <= 0) {
@@ -819,6 +873,35 @@ async function sendMessage(override, lessonId) {
     else if (d.error) { addMsg('tutor',`⚠️ ${d.error}`,false); }
     else {
       addMsg('tutor', d.reply, true);
+
+      // Update credit count if returned
+      if (typeof d.credits_remaining === 'number') {
+        const el = document.getElementById('creditCount');
+        if (el) el.textContent = d.credits_remaining;
+        document.getElementById('creditChip')?.classList.toggle('low', d.credits_remaining <= 10);
+        if (d.credits_remaining <= 0) disableChatInput();
+      }
+
+      // Q: mode — show cost badge and auto-extract first target word for TTS
+      if (d.q_mode) {
+        // Find first word card hear button and auto-click after short delay
+        setTimeout(() => {
+          const btn = document.querySelector('.wc-hear-btn');
+          if (btn && btn.textContent.includes('Hear')) {
+            btn.click();
+          }
+        }, 600);
+        // Show small cost indicator in chat
+        if (d.credits_used > 0) {
+          const area = document.getElementById('chatArea');
+          const notice = document.createElement('div');
+          notice.style.cssText = 'text-align:center;font-size:10px;color:var(--muted);margin:-8px 0 8px';
+          notice.textContent = `🪙 ${d.credits_used} credit${d.credits_used>1?'s':''} used · ${d.credits_remaining} remaining`;
+          area.appendChild(notice);
+          area.scrollTop = area.scrollHeight;
+        }
+      }
+
       if (d.new_badges?.length) d.new_badges.forEach((b,i)=>setTimeout(()=>showBadgeToast(b),i*1800));
     }
   } catch(e) {
@@ -846,11 +929,22 @@ let _audioCtx  = null;
 let _ttsSource = null;
 
 function getAudioCtx() {
-  if (!_audioCtx || _audioCtx.state==='closed')
+  if (!_audioCtx || _audioCtx.state==='closed') {
     _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-  if (_audioCtx.state==='suspended') _audioCtx.resume();
+  }
+  if (_audioCtx.state==='suspended') _audioCtx.resume().catch(()=>{});
   return _audioCtx;
 }
+
+// Resume AudioContext on any tap/click (fixes audio after returning from /buy)
+document.addEventListener('click', () => {
+  if (_audioCtx && _audioCtx.state==='suspended') _audioCtx.resume().catch(()=>{});
+}, {passive:true});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState==='visible' && _audioCtx && _audioCtx.state==='suspended') {
+    _audioCtx.resume().catch(()=>{});
+  }
+});
 
 async function speakWord(text, lang, btn) {
   if (!text?.trim()) return;
